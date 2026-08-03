@@ -23,11 +23,14 @@ const cardVariants = {
 
 /*
  * 보물상자와 캐릭터를 중앙에서 서로 반대쪽으로 밀어내는 거리.
- * 상자는 폭 80px(margin-left -40으로 중앙 정렬), 캐릭터 박스는 폭 232px(translateX -50%)이라
- * 이 값이 작으면 두 요소의 경계가 붙는다 — .app이 520px이므로 중앙에서 ±240px까지 여유가 있다.
+ * 상자는 폭 80px(margin-left -40으로 중앙 정렬), 캐릭터 박스는 폭 232px(translateX -50%)다.
+ *
+ * 상한은 넓은 화면이 아니라 좁은 화면이 정한다. 캐릭터가 중앙에서 차지하는 폭이
+ * 오프셋 + 116(박스 절반)이라, iPhone 15(393px)에서 넘치지 않으려면 오프셋이 80 이하여야 한다 —
+ * 100이던 값이 19.5px 넘쳐 가로 스크롤을 만들었다. 더 좁은 기기는 studyUnits의 clip이 받는다.
  */
-const TREASURE_OFFSET_X = 130;
-const CHARACTER_OFFSET_X = 100;
+const TREASURE_OFFSET_X = 112;
+const CHARACTER_OFFSET_X = 68;
 
 const pathCharacters = [
   'path-character-1',

@@ -80,6 +80,13 @@ export const studyUnits = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 38,
+  /*
+   * 보물상자·캐릭터는 장식이라 아주 좁은 화면에서 살짝 잘려도 되지만,
+   * 페이지 전체에 가로 스크롤을 만들면 안 된다.
+   * hidden이 아니라 clip을 쓰는 이유: hidden은 세로축까지 스크롤 컨테이너로 만들어
+   * 캐릭터(박스 232px, top -56px)가 위아래로 잘린다. clip은 가로만 자른다.
+   */
+  overflowX: 'clip',
 });
 
 export const unitHeader = style({
