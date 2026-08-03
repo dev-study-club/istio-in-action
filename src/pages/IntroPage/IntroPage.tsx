@@ -1,4 +1,5 @@
 import { m } from 'motion/react';
+import { useEffect, useRef } from 'react';
 
 import { BottomCta } from '../../components/BottomCta';
 import { Button } from '../../components/Button';
@@ -14,6 +15,22 @@ interface IntroPageProps {
 }
 
 export function IntroPage({ onStart }: IntroPageProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  /*
+   * React는 muted를 DOM 속성이 아니라 프로퍼티로만 설정한다. Chrome은 그걸로 충분하지만
+   * Safari는 파싱 시점의 muted "속성"을 보고 자동재생을 판단해서, 오디오 트랙이 있는 이 영상은
+   * 무음으로 취급되지 않아 재생이 막힌다 — 마운트 직후 직접 음소거하고 재생을 요청한다.
+   */
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video === null) return;
+
+    video.muted = true;
+    // 저전력 모드 등 정책으로 거부되면 poster가 남는다 — 화면이 비지 않으므로 조용히 넘긴다
+    video.play().catch(() => {});
+  }, []);
+
   return (
     <div className={styles.intro}>
       <m.div
@@ -24,6 +41,7 @@ export function IntroPage({ onStart }: IntroPageProps) {
       >
         {/* 17MB 원본 — poster를 먼저 그리고 재생에 필요한 만큼만 스트리밍한다 */}
         <video
+          ref={videoRef}
           className={styles.video}
           src={INTRO_VIDEO_URL}
           poster={INTRO_POSTER_URL}
