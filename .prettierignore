@@ -2,6 +2,10 @@ dist/
 public/fonts/
 public/lottie/
 
+# 락파일은 pnpm이 생성·관리한다. prettier로 포맷하면 pnpm add/remove 할 때마다
+# 서식이 되돌아가 CI가 깨진다 — 생성물은 포맷 대상으로 두지 않는다.
+pnpm-lock.yaml
+
 # 챕터 노트(content/<책>/<이름>/<장번호>.md)는 각자 자유롭게 쓰는 산문이다.
 # 배포 워크플로가 format:check로 배포를 막기 때문에, 글머리표 빈 줄 같은
 # 서식 차이 하나가 다른 사람의 진도 배포까지 멈추게 두지 않는다.
