@@ -1,0 +1,25 @@
+{
+  "fill": {
+    "canvas": "#101014",
+    "media": "#101014",
+    "neutral": "#23252b",
+    "neutral-weak": "#1a1c20",
+    "brand": "#3182f6",
+    "brand-strong": "#5c9dfa",
+    "brand-weak": "rgba(49, 130, 246, 0.18)"
+  },
+  "text": {
+    "neutral-strong": "#e7e9ec",
+    "neutral": "#b6bdc6",
+    "neutral-weak": "#7d8590",
+    "brand": "#75aefc",
+    "on-brand": "#ffffff",
+    "danger": "#f66570"
+  },
+  "border": {
+    "neutral": "#2f3238"
+  },
+  "shadow": {
+    "neutral": "rgba(0, 0, 0, 0.32)"
+  }
+}

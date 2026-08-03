@@ -1,0 +1,72 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 한 번에 하나만. 진행 중인 배포는 취소하지 않는다 —
+# 중간에 끊으면 Pages가 어중간한 상태로 남는다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # setup-node의 cache: pnpm은 pnpm이 먼저 설치돼 있어야 동작한다 — 순서를 바꾸지 말 것
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # 검사는 하나가 실패해도 끝까지 돌린다 — 고치고 푸시하길 반복하지 않도록
+      # 한 번의 실행에서 모든 실패를 보여준다. 실패한 스텝이 있으면 잡은 여전히 실패한다.
+      - name: lint
+        run: pnpm lint
+      - name: format
+        if: '!cancelled()'
+        run: pnpm format:check
+      - name: knip
+        if: '!cancelled()'
+        run: pnpm knip
+      - name: test
+        if: '!cancelled()'
+        run: pnpm test
+
+      # GitHub Pages 프로젝트 사이트는 /<저장소이름>/ 아래에 놓인다 — 저장소 이름을 직접 받아
+      # 절대 경로 base를 만든다. 이름이 바뀌어도 워크플로가 알아서 따라간다.
+      # SPA 폴백용 404.html은 빌드가 함께 만든다(vite.config.ts).
+      - name: build
+        run: pnpm build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

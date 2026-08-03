@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+
+# 에디터·도구 설정은 개인 환경이라 공유하지 않는다
+.idea/
+.vscode/
+.claude/
