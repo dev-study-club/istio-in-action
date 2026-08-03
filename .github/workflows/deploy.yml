@@ -21,13 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       # setup-node의 cache: pnpm은 pnpm이 먼저 설치돼 있어야 동작한다 — 순서를 바꾸지 말 것
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -55,8 +55,12 @@ jobs:
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      # enablement: 저장소에 Pages가 꺼져 있으면 워크플로가 직접 켠다 —
+      # Settings에서 손으로 켜두지 않아도 첫 배포가 성공한다.
+      - uses: actions/configure-pages@v6
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -69,4 +73,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
