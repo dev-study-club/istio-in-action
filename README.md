@@ -95,13 +95,15 @@ istioctl install --set profile=demo -y
 ## 4. 사람 추가하기 — `members.json`
 
 ```json
-[{ "name": "성수", "avatar": "avatars/성수.png" }]
+[{ "name": "성수", "avatar": "avatars/성수.webp" }]
 ```
 
 배열 순서가 화면에 보이는 순서입니다. 추가할 때 두 가지만 하면 됩니다.
 
 1. `members.json`에 이름·아바타 추가
-2. `public/avatars/<이름>.png` 이미지 넣기
+2. `public/avatars/<이름>.webp` 이미지 넣기 — 카드 폭을 꽉 채우므로 **1000px 16:9**로 준비합니다
+
+> PNG로 받았다면 `cwebp -q 82 <이름>.png -o <이름>.webp`로 바꿔 넣어주세요. 같은 화질에 용량이 1/4입니다.
 
 노트 폴더(`content/istio-in-action/<이름>/`)는 첫 노트를 쓸 때 만들면 됩니다.
 

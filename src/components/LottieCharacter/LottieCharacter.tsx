@@ -19,7 +19,8 @@ export function LottieCharacter({ name }: LottieCharacterProps) {
       ([entry]) => {
         if (!entry.isIntersecting) return;
         observer.disconnect();
-        void import('lottie-web').then(({ default: lottie }) => {
+        // svg 렌더러만 쓰므로 canvas·html 렌더러가 빠진 light 빌드로 충분하다 (75KB → 46KB gzip)
+        void import('lottie-web/build/player/lottie_light').then(({ default: lottie }) => {
           if (disposed) return;
           const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
           animation = lottie.loadAnimation({
