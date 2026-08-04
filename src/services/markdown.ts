@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify';
 import { Marked } from 'marked';
+import noteImageSizes from 'virtual:note-image-sizes';
 
 const ABSOLUTE_URL_PATTERN = /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i;
 
@@ -16,12 +17,21 @@ function escapeAttribute(value: string): string {
 const marked = new Marked({
   renderer: {
     image({ href, title, text }) {
-      const src = ABSOLUTE_URL_PATTERN.test(href)
-        ? href
-        : `${import.meta.env.BASE_URL}${href.replace(/^\.?\//, '')}`;
+      const isAbsolute = ABSOLUTE_URL_PATTERN.test(href);
+      const publicPath = href.replace(/^\.?\//, '');
+      const src = isAbsolute ? href : `${import.meta.env.BASE_URL}${publicPath}`;
       const titleAttribute = title ? ` title="${escapeAttribute(title)}"` : '';
+
+      /*
+       * 원본 크기를 적어두면 브라우저가 로드 전에 자리를 잡아 본문이 밀리지 않는다.
+       * CSS의 max-width/height:auto와 함께 쓰면 비율만 유지한 채 폭에 맞춰 줄어든다.
+       * 크기를 모르는 이미지(외부 URL 등)는 속성 없이 지금까지처럼 그린다.
+       */
+      const size = isAbsolute ? undefined : noteImageSizes[publicPath];
+      const sizeAttributes = size ? ` width="${size[0]}" height="${size[1]}"` : '';
+
       // 노트 이미지는 스크롤해야 보이는 위치가 대부분이라 lazy가 기본이다
-      return `<img src="${escapeAttribute(src)}" alt="${escapeAttribute(text)}"${titleAttribute} loading="lazy" decoding="async">`;
+      return `<img src="${escapeAttribute(src)}" alt="${escapeAttribute(text)}"${titleAttribute}${sizeAttributes} loading="lazy" decoding="async">`;
     },
   },
 });

@@ -36,6 +36,23 @@ describe('renderMarkdown', () => {
     expect(html, `html was: ${html}`).toContain('loading="lazy"');
   });
 
+  test('저장소 안 이미지에는 원본 크기를 적어 본문이 밀리지 않게 한다', () => {
+    // Act — 실제로 저장소에 있는 이미지여야 빌드가 크기를 찾을 수 있다
+    const html = renderMarkdown('![개념도](images/notes/istio-in-action/1-1.webp)');
+
+    // Assert — 값 자체보다 "크기가 붙는가"가 중요하다 (이미지가 교체돼도 테스트가 살아남는다)
+    expect(html, `html was: ${html}`).toMatch(/width="\d+"/);
+    expect(html, `html was: ${html}`).toMatch(/height="\d+"/);
+  });
+
+  test('크기를 알 수 없는 이미지는 속성 없이 그대로 그린다', () => {
+    // Act
+    const html = renderMarkdown('![없는것](images/notes/istio-in-action/없는파일.webp)');
+
+    // Assert — 억지로 0을 넣으면 이미지가 사라진다
+    expect(html, `html was: ${html}`).not.toMatch(/width="/);
+  });
+
   test('절대 URL 이미지는 손대지 않는다', () => {
     // Act
     const html = renderMarkdown('![외부](https://example.com/a.png)');
