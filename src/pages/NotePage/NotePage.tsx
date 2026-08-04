@@ -1,3 +1,5 @@
+import { m } from 'motion/react';
+
 import { BackButton } from '../../components/BackButton';
 import { ChapterNote } from '../../components/ChapterNote';
 import { ErrorScreen } from '../../components/ScreenStates';
@@ -45,9 +47,23 @@ export function NotePage({ member, chapterId }: NotePageProps) {
         <ChapterNote member={member} chapterId={chapter.id} />
       ) : (
         <div className={styles.emptyNote}>
-          <span className={styles.emptyNoteIcon} aria-hidden>
-            ✎
-          </span>
+          {/* 둥실 떠 있게 해 빈 화면이 고장난 것처럼 보이지 않게 한다.
+              감속 모션 설정은 App의 MotionConfig(reducedMotion="user")가 알아서 꺼준다 */}
+          <m.img
+            className={styles.emptyNoteSpot}
+            src={`${import.meta.env.BASE_URL}images/not-found.png`}
+            alt=""
+            width={120}
+            height={120}
+            decoding="async"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1, y: [0, -8, 0] }}
+            transition={{
+              opacity: { duration: 0.35, ease: 'easeOut' },
+              scale: { duration: 0.35, ease: 'easeOut' },
+              y: { duration: 2.6, ease: 'easeInOut', repeat: Infinity },
+            }}
+          />
           <strong>아직 작성한 내용이 없어요</strong>
           <code>{chapterNotePath(member, chapter.id)}</code>
         </div>

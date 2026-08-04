@@ -15,16 +15,10 @@ export const emptyNote = style({
   textAlign: 'center',
 });
 
-export const emptyNoteIcon = style({
-  width: 44,
-  height: 44,
-  display: 'grid',
-  placeItems: 'center',
+export const emptyNoteSpot = style({
+  width: 120,
+  height: 120,
   marginBottom: 4,
-  borderRadius: '50%',
-  background: vars.fill.canvas,
-  color: vars.text.brand,
-  fontSize: 20,
 });
 
 globalStyle(`.${emptyNote} strong`, {
