@@ -4,11 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <link rel="shortcut icon" href="./favicon.ico" />
-    <link rel="icon" href="./favicon-32x32.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="152x152" />
-    <link rel="stylesheet" href="./fonts/tps/main-swap.css" />
-    <link rel="stylesheet" href="./fonts/tps/others-swap.css" />
+    <!--
+      루트 절대경로로 적어야 한다. './'는 문서 URL 기준으로 풀리는데 이 앱은 /note/<이름>/<장>
+      같은 깊은 주소를 쓰므로 /note/<이름>/fonts/... 를 찾다가 404가 난다(실제로 폰트가 안 떴다).
+      '/'로 시작하면 Vite가 빌드 때 base(배포 하위 경로)를 붙여준다.
+    -->
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="152x152" />
+    <link rel="stylesheet" href="/fonts/tps/main-swap.css" />
+    <link rel="stylesheet" href="/fonts/tps/others-swap.css" />
     <title>Dev Study Club</title>
   </head>
   <body>
