@@ -24,7 +24,9 @@ const stepVariants = {
   enter: (skip: boolean) => (skip ? { opacity: 1, x: 0 } : { opacity: 0, x: 32 }),
   center: { opacity: 1, x: 0, transition: STEP_TRANSITION },
   exit: (skip: boolean) =>
-    skip ? { opacity: 0, transition: INSTANT } : { opacity: 0, x: -24, transition: STEP_TRANSITION },
+    skip
+      ? { opacity: 0, transition: INSTANT }
+      : { opacity: 0, x: -24, transition: STEP_TRANSITION },
 };
 
 /**
