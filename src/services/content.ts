@@ -9,7 +9,7 @@
  * 앞으로 계속 늘어날 콘텐츠라 lazy로 나눈다 — 노트가 늘어도 초기 번들이 커지지 않는다.
  *
  * 배치는 책 단위다: content/<책>/{chapters.md, schedule.md, members.json} + content/<책>/<이름>/<장번호>.md
- * StudySelectPage에 스터디가 셋 등록돼 있으므로 책 이름이 경로에 없으면 두 번째 책을 둘 자리가 없다.
+ * 지금은 한 책만 열려 있지만, 경로에 책 이름이 없으면 다음 책을 둘 자리가 없어 이 층을 남겨둔다.
  */
 
 import type { Member } from './types';
@@ -17,7 +17,7 @@ import type { Member } from './types';
 /**
  * Vite는 glob 패턴에 리터럴만 허용해 책 이름을 상수로 끼워 넣을 수 없다.
  * 대신 책 자리를 '*'로 두어 새 책이 생겨도 패턴을 고칠 일이 없게 한다.
- * 지금 열려 있는 스터디는 Istio 하나뿐이라(StudySelectPage의 available) 조회는 이 상수로 좁힌다 —
+ * 지금 열려 있는 스터디는 Istio 하나뿐이라 조회는 이 상수로 좁힌다 —
  * 책이 늘면 이 상수를 함수 파라미터로 바꾸면 되고, 파일 배치는 그대로 쓴다.
  */
 const BOOK = 'istio-in-action';

@@ -2,11 +2,11 @@
  * 최상위 화면을 경로로 가른다 (해시 없음).
  *
  *   /                    인트로(비디오) — 랜딩
- *   /book                스터디 퍼널 — 책 선택 → 사람 선택 → 학습 진도
+ *   /member              스터디 퍼널 — 사람 선택 → 학습 진도
  *   /note/<이름>/<장번호>  챕터 노트 — 공유 가능한 글이라 자체 주소를 가진다
  *   그 외                 404
  *
- * GitHub Pages에는 SPA 폴백이 없어 /book으로 직접 들어오면 서버가 404를 낸다 —
+ * GitHub Pages에는 SPA 폴백이 없어 /member로 직접 들어오면 서버가 404를 낸다 —
  * 배포 워크플로가 index.html을 404.html로 복사해 앱이 뜨게 만든다(.github/workflows/deploy.yml).
  * 그리고 깊은 주소에서 자산 경로가 어긋나지 않도록 base는 절대 경로여야 한다(vite.config.ts).
  *
@@ -40,14 +40,14 @@ function readPath(): string {
     '',
   );
   if (rest === '' && new URLSearchParams(window.location.search).has(FUNNEL_QUERY_KEY)) {
-    return 'book';
+    return 'member';
   }
   return rest;
 }
 
 function parsePath(path: string): Route {
   if (path === '') return { name: 'intro' };
-  if (path === 'book') return { name: 'funnel' };
+  if (path === 'member') return { name: 'funnel' };
 
   const match = NOTE_PATTERN.exec(path);
   if (match !== null) {
@@ -95,7 +95,7 @@ export function goToIntro(): void {
 }
 
 export function goToFunnel(): void {
-  navigate('book');
+  navigate('member');
 }
 
 export function goToNote(member: string, chapterId: number): void {
