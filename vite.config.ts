@@ -27,6 +27,21 @@ function spaFallbackHtml(): Plugin {
 
 /** 헤더만 읽어 이미지 원본 크기를 구한다 — 이 용도로 의존성을 하나 더 들이지 않는다 */
 function readImageSize(buffer: Buffer): [number, number] | null {
+  /*
+   * AVIF: ISOBMFF 박스 구조라 크기가 meta > iprp > ipco > ispe 안에 들어 있다.
+   * 박스를 전부 파고들 것 없이 ispe를 찾아 그 뒤의 폭·높이를 읽는다.
+   * 썸네일·알파 같은 보조 이미지도 각자 ispe를 갖지만, 주 이미지 것이 먼저 나온다.
+   */
+  if (buffer.length > 12 && buffer.toString('ascii', 4, 8) === 'ftyp') {
+    const ispe = buffer.indexOf('ispe', 0, 'ascii');
+    // 4바이트 version/flags를 건너뛰면 폭·높이가 32비트 빅엔디언으로 이어진다
+    if (ispe !== -1 && ispe + 16 <= buffer.length) {
+      const width = buffer.readUInt32BE(ispe + 8);
+      const height = buffer.readUInt32BE(ispe + 12);
+      if (width > 0 && height > 0) return [width, height];
+    }
+    return null;
+  }
   // WebP: RIFF....WEBP + VP8 / VP8L / VP8X 청크
   if (buffer.length > 30 && buffer.toString('ascii', 0, 4) === 'RIFF') {
     const chunk = buffer.toString('ascii', 12, 16);
