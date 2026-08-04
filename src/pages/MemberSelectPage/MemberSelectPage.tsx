@@ -20,6 +20,12 @@ interface MemberSelectPageProps {
   onBack: () => void;
 }
 
+/**
+ * 이 화면은 인트로 다음 첫 화면이라 아바타가 대부분 처음부터 보인다 —
+ * lazy로 두면 스크롤도 하기 전에 빈 칸부터 보인다. 접힘 아래에 있을 만한 것만 미룬다.
+ */
+const EAGER_AVATAR_COUNT = 2;
+
 export function MemberSelectPage({ onSelect, onBack }: MemberSelectPageProps) {
   return (
     <div>
@@ -34,7 +40,7 @@ export function MemberSelectPage({ onSelect, onBack }: MemberSelectPageProps) {
       <p className={screen.subtitle}>이름을 선택하면 내 진도가 열려요</p>
 
       <m.ul className={styles.grid} variants={listVariants} initial="hidden" animate="show">
-        {members().map((member) => (
+        {members().map((member, index) => (
           <m.li key={member.name} variants={cardVariants}>
             <m.button
               type="button"
@@ -48,7 +54,10 @@ export function MemberSelectPage({ onSelect, onBack }: MemberSelectPageProps) {
                   className={styles.avatar}
                   src={`${import.meta.env.BASE_URL}${member.avatar}`}
                   alt=""
-                  loading="lazy"
+                  width={1000}
+                  height={562}
+                  loading={index < EAGER_AVATAR_COUNT ? 'eager' : 'lazy'}
+                  fetchPriority={index === 0 ? 'high' : 'auto'}
                   decoding="async"
                 />
               </span>

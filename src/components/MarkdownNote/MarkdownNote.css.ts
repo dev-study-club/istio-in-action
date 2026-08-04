@@ -35,6 +35,18 @@ globalStyle(`${scope} h1`, { margin: '48px 0 14px', fontSize: 24 });
 globalStyle(`${scope} h2`, { margin: '44px 0 12px', fontSize: 21 });
 globalStyle(`${scope} h3`, { margin: '30px 0 8px', fontSize: 17 });
 
+/*
+ * h4 아래로는 본문과 크기가 같아진다 — 굵기와 여백으로만 구분한다.
+ * 스타일을 안 주면 브라우저 기본값이 나와 h3보다 작고 여백도 제각각이라 위계가 무너진다.
+ */
+globalStyle(`${scope} h4, ${scope} h5, ${scope} h6`, {
+  margin: '24px 0 6px',
+  color: vars.text['neutral-strong'],
+  fontSize: 16,
+  fontWeight: 600,
+  lineHeight: 1.5,
+});
+
 globalStyle(`${scope} p`, { margin: '16px 0' });
 
 globalStyle(`${scope} ul, ${scope} ol`, {
@@ -53,19 +65,57 @@ globalStyle(`${scope} strong`, {
   fontWeight: 600,
 });
 
+globalStyle(`${scope} em`, {
+  fontStyle: 'normal',
+  color: vars.text['neutral-strong'],
+});
+
+globalStyle(`${scope} del`, {
+  color: vars.text['neutral-weak'],
+  textDecorationThickness: 1,
+});
+
 globalStyle(`${scope} a`, {
   color: vars.text.brand,
   textDecoration: 'underline',
   textUnderlineOffset: 2,
 });
 
-/* 노션에서 가져온 다이어그램은 원본이 1800px를 넘기도 한다 — 폭에 맞춰 줄인다 */
+/*
+ * 노트는 --- 로 장을 나눈다. 기본 hr은 두꺼운 홈이 파인 선이라 글 흐름에 튄다 —
+ * 얇은 선 하나로 바꾸고 위아래 여백을 넉넉히 준다.
+ */
+globalStyle(`${scope} hr`, {
+  margin: '40px 0',
+  border: 'none',
+  borderTop: `1px solid ${vars.border.neutral}`,
+});
+
+/*
+ * 노션에서 가져온 다이어그램은 원본이 1800px를 넘기도 한다 — 폭에 맞춰 줄인다.
+ * 렌더러가 width/height를 적어주므로 브라우저가 비율을 알고 자리를 먼저 잡는다.
+ * 빈 자리가 흰 구멍으로 보이지 않게 옅은 면을 깔아둔다.
+ */
 globalStyle(`${scope} img`, {
   display: 'block',
   maxWidth: '100%',
   height: 'auto',
   margin: '28px 0',
   borderRadius: 12,
+  background: vars.fill.neutral,
+});
+
+/* 페이드는 MarkdownNote의 효과가 도는 동안에만 — 스크립트가 죽으면 이 규칙 자체가 안 걸린다 */
+globalStyle(`${scope}[data-fade='on'] img`, {
+  opacity: 0,
+  transition: 'opacity 0.4s ease-out',
+  '@media': {
+    '(prefers-reduced-motion: reduce)': { transition: 'none' },
+  },
+});
+
+globalStyle(`${scope}[data-fade='on'] img[data-settled='true']`, {
+  opacity: 1,
 });
 
 globalStyle(`${scope} code`, {
