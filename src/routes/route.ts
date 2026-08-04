@@ -83,15 +83,52 @@ export function subscribeToRoute(onChange: () => void): () => void {
   };
 }
 
+/**
+ * 이 이동으로 화면을 "처음 여는지"(push) "다시 보는지"(pop).
+ * 뒤로/앞으로로 되돌아온 화면은 이미 본 화면이라 등장 애니메이션을 재생하지 않는다 —
+ * hooks/useEntranceAnimation.ts가 이 값을 읽는다.
+ */
+export type NavigationType = 'push' | 'pop';
+
+/** 첫 진입은 아무 화면도 본 적이 없으므로 push다 */
+let navigationType: NavigationType = 'push';
+
+/**
+ * 방향을 알 수 있는 곳은 전역 history뿐이다. pushState를 부르는 건 아래 navigate만이 아니라
+ * @use-funnel도 마찬가지라(단계를 옮길 때 직접 부른다), 여기 한 곳을 감싸야
+ * 퍼널 단계 전진까지 "처음 여는 화면"으로 잡힌다.
+ */
+const pushState = window.history.pushState.bind(window.history);
+window.history.pushState = (...args: Parameters<History['pushState']>) => {
+  navigationType = 'push';
+  pushState(...args);
+};
+
+/** 구독자보다 먼저 붙어야 subscribeToRoute로 깨어난 쪽이 갱신된 방향을 본다 */
+window.addEventListener('popstate', () => {
+  navigationType = 'pop';
+});
+
+export function readNavigationType(): NavigationType {
+  return navigationType;
+}
+
 /** 이동은 history에 쌓이므로 브라우저 뒤로가기가 그대로 동작한다 */
-function navigate(path: string): void {
+function navigate(path: string, options?: { asBack: true }): void {
   window.history.pushState(null, '', `${BASE}${path}`);
+  // 화면 안의 뒤로가기 버튼은 히스토리에 쌓이지만, 사용자에겐 되돌아가는 이동이다
+  if (options?.asBack === true) navigationType = 'pop';
   window.dispatchEvent(new Event(ROUTE_CHANGE_EVENT));
 }
 
 /** 퍼널 쿼리를 함께 지운다 — 남기면 위 readPath가 퍼널로 판정해 인트로가 열리지 않는다 */
 export function goToIntro(): void {
   navigate('');
+}
+
+/** 퍼널 첫 단계에는 안에서 돌아갈 곳이 없어 인트로로 나간다 — 방향은 뒤로가기다 */
+export function goBackToIntro(): void {
+  navigate('', { asBack: true });
 }
 
 export function goToFunnel(): void {

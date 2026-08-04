@@ -2,6 +2,7 @@ import { m } from 'motion/react';
 
 import { members } from '../../services/content';
 import { BackButton } from '../../components/BackButton';
+import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
 import * as screen from '../../styles/screen.css';
 import * as styles from './MemberSelectPage.css';
 
@@ -27,6 +28,8 @@ interface MemberSelectPageProps {
 const EAGER_AVATAR_COUNT = 2;
 
 export function MemberSelectPage({ onSelect, onBack }: MemberSelectPageProps) {
+  const animateEntrance = useEntranceAnimation();
+
   return (
     <div>
       <nav className={screen.nav}>
@@ -39,7 +42,13 @@ export function MemberSelectPage({ onSelect, onBack }: MemberSelectPageProps) {
       </h2>
       <p className={screen.subtitle}>이름을 선택하면 내 진도가 열려요</p>
 
-      <m.ul className={styles.grid} variants={listVariants} initial="hidden" animate="show">
+      {/* 되돌아온 화면에서는 도착 상태(show)에서 시작해 카드가 다시 하나씩 떠오르지 않게 한다 */}
+      <m.ul
+        className={styles.grid}
+        variants={listVariants}
+        initial={animateEntrance ? 'hidden' : 'show'}
+        animate="show"
+      >
         {members().map((member, index) => (
           <m.li key={member.name} variants={cardVariants}>
             <m.button

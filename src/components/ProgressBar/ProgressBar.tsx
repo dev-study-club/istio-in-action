@@ -1,5 +1,6 @@
 import { m } from 'motion/react';
 
+import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
 import { fill, track } from './ProgressBar.css';
 
 interface ProgressBarProps {
@@ -7,6 +8,9 @@ interface ProgressBarProps {
 }
 
 export function ProgressBar({ percent }: ProgressBarProps) {
+  // 되돌아온 화면에서는 이미 채워진 막대를 다시 0부터 채우지 않는다
+  const animateEntrance = useEntranceAnimation();
+
   return (
     <div
       className={track}
@@ -17,7 +21,7 @@ export function ProgressBar({ percent }: ProgressBarProps) {
     >
       <m.div
         className={fill}
-        initial={{ width: 0 }}
+        initial={{ width: animateEntrance ? 0 : `${percent}%` }}
         animate={{ width: `${percent}%` }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       />

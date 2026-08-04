@@ -5,9 +5,13 @@ import { ChapterNote } from '../../components/ChapterNote';
 import { ErrorScreen } from '../../components/ScreenStates';
 import { goToFunnel } from '../../routes/route';
 import { chapterNotePath } from '../../services/content';
+import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
 import { useMemberProgress } from '../../hooks/useMemberProgress';
 import * as screen from '../../styles/screen.css';
 import * as styles from './NotePage.css';
+
+const SPOT_ENTER = { opacity: 0, scale: 0.9 };
+const SPOT_SETTLED = { opacity: 1, scale: 1 };
 
 interface NotePageProps {
   member: string;
@@ -20,6 +24,7 @@ interface NotePageProps {
  */
 export function NotePage({ member, chapterId }: NotePageProps) {
   const { progress, completedChapters } = useMemberProgress(member);
+  const animateEntrance = useEntranceAnimation();
   const chapter = progress.chapters.find(({ id }) => id === chapterId);
 
   const goBack = () => {
@@ -56,8 +61,9 @@ export function NotePage({ member, chapterId }: NotePageProps) {
             width={120}
             height={120}
             decoding="async"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1, y: [0, -8, 0] }}
+            // 둥실 뜨는 반복 모션은 그대로 두고, 처음 나타나는 페이드인만 건너뛴다
+            initial={animateEntrance ? SPOT_ENTER : SPOT_SETTLED}
+            animate={{ ...SPOT_SETTLED, y: [0, -8, 0] }}
             transition={{
               opacity: { duration: 0.35, ease: 'easeOut' },
               scale: { duration: 0.35, ease: 'easeOut' },

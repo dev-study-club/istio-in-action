@@ -6,6 +6,7 @@ import { scheduleMarkdown } from '../../services/content';
 import { LottieCharacter } from '../../components/LottieCharacter';
 import { ProgressBar } from '../../components/ProgressBar';
 import { getStudyQuest, parseStudySchedule } from '../../services/schedule';
+import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
 import { useMemberProgress } from '../../hooks/useMemberProgress';
 import { BackButton } from '../../components/BackButton';
 import * as screen from '../../styles/screen.css';
@@ -20,6 +21,9 @@ const cardVariants = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' as const } },
 };
+
+const QUEST_ENTER = { opacity: 0, y: 16 };
+const QUEST_SETTLED = { opacity: 1, y: 0 };
 
 /*
  * 보물상자와 캐릭터를 중앙에서 서로 반대쪽으로 밀어내는 거리.
@@ -55,6 +59,7 @@ interface HomePageProps {
 
 export function HomePage({ member, onSelectChapter, onBack }: HomePageProps) {
   const { progress } = useMemberProgress(member);
+  const animateEntrance = useEntranceAnimation();
   // 일정 원문은 빌드에 고정돼 있어 한 번만 파싱하면 된다
   const schedule = useMemo(() => parseStudySchedule(scheduleMarkdown()), []);
   const quest = getStudyQuest(schedule);
@@ -84,8 +89,8 @@ export function HomePage({ member, onSelectChapter, onBack }: HomePageProps) {
       <m.section
         className={styles.questCard}
         aria-label="완독 퀘스트 진행 상황"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={animateEntrance ? QUEST_ENTER : QUEST_SETTLED}
+        animate={QUEST_SETTLED}
         transition={{ duration: 0.35, ease: 'easeOut' }}
       >
         <div className={styles.questHeading}>
@@ -115,7 +120,12 @@ export function HomePage({ member, onSelectChapter, onBack }: HomePageProps) {
         </p>
       </m.section>
 
-      <m.div className={styles.studyUnits} variants={listVariants} initial="hidden" animate="show">
+      <m.div
+        className={styles.studyUnits}
+        variants={listVariants}
+        initial={animateEntrance ? 'hidden' : 'show'}
+        animate="show"
+      >
         {schedule.map((unit, unitIndex) => {
           const isCurrentUnit = unit === quest;
           const curveDirection = unitIndex % 2 === 0 ? -1 : 1;

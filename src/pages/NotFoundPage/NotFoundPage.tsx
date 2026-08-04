@@ -2,8 +2,12 @@ import { m } from 'motion/react';
 
 import { BottomCta } from '../../components/BottomCta';
 import { Button } from '../../components/Button';
+import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
 import * as screen from '../../styles/screen.css';
 import * as styles from './NotFoundPage.css';
+
+const SPOT_ENTER = { opacity: 0, scale: 0.9 };
+const SPOT_SETTLED = { opacity: 1, scale: 1 };
 
 interface NotFoundPageProps {
   onHome: () => void;
@@ -11,6 +15,8 @@ interface NotFoundPageProps {
 
 /** 모르는 해시로 들어왔을 때 — 인트로로 조용히 넘기지 않고 없는 페이지라고 알린다 */
 export function NotFoundPage({ onHome }: NotFoundPageProps) {
+  const animateEntrance = useEntranceAnimation();
+
   return (
     <div className={styles.notFound}>
       <m.img
@@ -20,8 +26,8 @@ export function NotFoundPage({ onHome }: NotFoundPageProps) {
         width={160}
         height={160}
         decoding="async"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={animateEntrance ? SPOT_ENTER : SPOT_SETTLED}
+        animate={SPOT_SETTLED}
         transition={{ duration: 0.35, ease: 'easeOut' }}
       />
       <h1 className={screen.title}>주소를 찾을 수 없어요</h1>
