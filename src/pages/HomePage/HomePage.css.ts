@@ -5,6 +5,7 @@ import { vars } from '../../styles/theme.css';
 /* ── 퀘스트 카드 ──────────────────────────── */
 
 export const questCard = style({
+  position: 'relative',
   marginTop: 24,
   padding: '15px 17px',
   borderRadius: 20,

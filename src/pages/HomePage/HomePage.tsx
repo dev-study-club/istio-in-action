@@ -5,8 +5,11 @@ import { chapterStats } from '../../services/stats';
 import { scheduleMarkdown } from '../../services/content';
 import { LottieCharacter } from '../../components/LottieCharacter';
 import { ProgressBar } from '../../components/ProgressBar';
+import { CelebrationOverlay } from '../../components/CelebrationOverlay';
 import { getStudyQuest, parseStudySchedule } from '../../services/schedule';
+import type { Chapter } from '../../services/types';
 import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
+import { useCelebration } from '../../hooks/useCelebration';
 import { useMemberProgress } from '../../hooks/useMemberProgress';
 import { BackButton } from '../../components/BackButton';
 import * as screen from '../../styles/screen.css';
@@ -51,6 +54,12 @@ const pathCharacters = [
   'path-character-18',
 ] as const;
 
+/** 절이 하나도 없는 챕터는 "다 했다"가 아니라 아직 쓸 게 없는 상태다 */
+function isChapterComplete(chapter: Chapter): boolean {
+  const stat = chapterStats(chapter);
+  return stat.total > 0 && stat.done === stat.total;
+}
+
 interface HomePageProps {
   member: string;
   onSelectChapter: (chapterId: number) => void;
@@ -60,25 +69,31 @@ interface HomePageProps {
 export function HomePage({ member, onSelectChapter, onBack }: HomePageProps) {
   const { progress } = useMemberProgress(member);
   const animateEntrance = useEntranceAnimation();
-  // 일정 원문은 빌드에 고정돼 있어 한 번만 파싱하면 된다
-  const schedule = useMemo(() => parseStudySchedule(scheduleMarkdown()), []);
+  // 일정 원문은 빌드에 고정돼 있어 사람이 바뀔 때만 다시 파싱하면 된다
+  const schedule = useMemo(() => parseStudySchedule(scheduleMarkdown(member)), [member]);
   const quest = getStudyQuest(schedule);
   const questDone = quest.chapterIds.filter((chapterId) => {
     const chapter = progress.chapters.find(({ id }) => id === chapterId);
-    if (!chapter) return false;
-    const stat = chapterStats(chapter);
-    return stat.total > 0 && stat.done === stat.total;
+    return chapter !== undefined && isChapterComplete(chapter);
   }).length;
   const activeChapterId = quest.chapterIds.find((chapterId) => {
     const chapter = progress.chapters.find(({ id }) => id === chapterId);
-    if (!chapter) return false;
-    const stat = chapterStats(chapter);
-    return stat.total === 0 || stat.done !== stat.total;
+    return chapter !== undefined && !isChapterComplete(chapter);
   });
   const questPercent = (questDone / quest.chapterIds.length) * 100;
 
+  const completedChapterIds = useMemo(
+    () => progress.chapters.filter(isChapterComplete).map(({ id }) => id),
+    [progress],
+  );
+  /* 지난 방문보다 완료한 칸이 늘었을 때만 축하한다 —
+     기록이 아예 없는 첫 방문은 "채워지는 순간"을 본 게 아니라 조용히 넘어간다 */
+  const { celebrating, dismiss } = useCelebration(member, completedChapterIds);
+
   return (
     <div>
+      <CelebrationOverlay show={celebrating.size > 0} onDone={dismiss} />
+
       <header>
         <nav className={screen.nav}>
           <BackButton onClick={onBack} />
@@ -108,7 +123,7 @@ export function HomePage({ member, onSelectChapter, onBack }: HomePageProps) {
         </div>
         <div className={styles.questBody}>
           <strong className={styles.questTitle}>
-            {quest.chapterIds[0]}장 · {quest.chapterIds[1]}장 완료하기
+            {quest.chapterIds.map((id) => `${id}장`).join(' · ')} 완료하기
           </strong>
           <span className={styles.questCount}>
             {questDone} / {quest.chapterIds.length}

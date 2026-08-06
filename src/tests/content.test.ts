@@ -38,13 +38,29 @@ describe('content glob 배선', () => {
     }
   });
 
-  it('schedule.md를 찾아 일정 표로 파싱한다', () => {
+  it.each(members().map(({ name }) => name))('%s의 일정을 표로 파싱한다', (member) => {
     // Act
-    const schedule = parseStudySchedule(scheduleMarkdown());
+    const schedule = parseStudySchedule(scheduleMarkdown(member));
 
     // Assert
     expect(schedule.length, `schedule rows: ${schedule.length}`).toBeGreaterThan(0);
-    expect(schedule[0].chapterIds).toHaveLength(2);
+    for (const { chapterIds } of schedule) {
+      expect(chapterIds.length, `chapterIds: ${chapterIds}`).toBeGreaterThan(0);
+    }
+  });
+
+  /*
+   * 사람마다 속도가 갈려서 자기 폴더의 일정이 공용보다 우선해야 한다.
+   * "일정을 읽어왔다"만 확인하면 개인 일정이 조용히 무시되고 공용으로 새는 걸 잡지 못한다.
+   */
+  it('자기 폴더에 일정이 있으면 공용 일정 대신 그것을 쓴다', () => {
+    // Arrange — 채영은 이번 주에 1~4장을 몰아 듣는다 (공용은 같은 주에 7, 8장)
+    const 개인 = scheduleMarkdown('채영');
+    const 공용 = scheduleMarkdown('일정파일이-없는사람');
+
+    // Assert
+    expect(개인, '채영의 개인 일정이 공용과 같다 — 폴백으로 샜다').not.toBe(공용);
+    expect(parseStudySchedule(개인)[0].chapterIds).toEqual([1, 2, 3, 4]);
   });
 
   it.each(members().map(({ name }) => name))(

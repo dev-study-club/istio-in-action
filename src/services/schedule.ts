@@ -1,23 +1,39 @@
 export interface StudyQuest {
   start: string;
   end: string;
-  chapterIds: readonly [number, number];
+  /** 그 주에 나갈 챕터. 사람마다 속도가 달라 한 개일 수도, 여러 개일 수도 있다 */
+  chapterIds: readonly number[];
   topic: string;
 }
 
 const SCHEDULE_ROW_PATTERN =
-  /^\|\s*(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})\s*\|\s*(\d+)\s*,\s*(\d+)\s*\|\s*(.+?)\s*\|$/;
+  /^\|\s*(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})\s*\|\s*(\d+(?:\s*,\s*\d+)*)\s*\|\s*(.+?)\s*\|$/;
+
+/** 표의 머리글·구분선과 일정 행을 가르는 표식 — 날짜가 있으면 일정을 적으려던 줄로 본다 */
+const DATE_HINT = /\d{4}-\d{2}-\d{2}/;
 
 export function parseStudySchedule(markdown: string): readonly StudyQuest[] {
   const schedule = markdown.split('\n').flatMap((line) => {
-    const match = line.trim().match(SCHEDULE_ROW_PATTERN);
-    if (!match) return [];
+    const row = line.trim();
+    const match = row.match(SCHEDULE_ROW_PATTERN);
+    if (!match) {
+      /*
+       * 날짜가 있는데 형식이 어긋난 줄은 조용히 버리지 않는다.
+       * 그 주차가 화면에서 통째로 사라지는데, 에러도 빈 자리도 없어 아무도 눈치채지 못한다.
+       */
+      if (DATE_HINT.test(row)) {
+        throw new Error(
+          `schedule.md의 일정 행 형식이 어긋났습니다. "| YYYY-MM-DD ~ YYYY-MM-DD | 1, 2 | 소주제 |" 형태여야 하고 챕터는 쉼표로 하나 이상 적습니다. 문제된 줄: ${row}`,
+        );
+      }
+      return [];
+    }
     return [
       {
         start: match[1],
         end: match[2],
-        chapterIds: [Number(match[3]), Number(match[4])] as const,
-        topic: match[5],
+        chapterIds: match[3].split(',').map((id) => Number(id.trim())),
+        topic: match[4],
       },
     ];
   });

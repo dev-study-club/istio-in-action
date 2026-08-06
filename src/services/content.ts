@@ -52,6 +52,7 @@ for (const [path, list] of Object.entries(memberFiles)) {
 const CHAPTERS_PATH_PATTERN = /\/content\/([^/]+)\/chapters\.md$/;
 const NOTE_PATH_PATTERN = /\/content\/([^/]+)\/([^/]+)\/(\d+)\.md$/;
 const SCHEDULE_PATH_PATTERN = /\/content\/([^/]+)\/schedule\.md$/;
+const MEMBER_SCHEDULE_PATH_PATTERN = /\/content\/([^/]+)\/([^/]+)\/schedule\.md$/;
 
 /** 목차는 책에 속한다 — 같은 책을 함께 읽으므로 사람마다 복사할 이유가 없다 */
 const chaptersByBook = new Map<string, string>();
@@ -78,10 +79,30 @@ for (const [path, markdown] of Object.entries(
   if (match !== null) scheduleByBook.set(normalizeName(match[1]), markdown);
 }
 
-/** 멤버 폴더에는 노트만 있다 — 숫자 파일명만 노트로 인정한다 */
+/**
+ * 사람별 일정 — 같이 읽어도 속도가 갈려서, 자기 폴더에 schedule.md를 두면 그것이 우선한다.
+ * 없으면 책 공용 일정을 그대로 쓴다.
+ */
+const scheduleByMember = new Map<string, string>();
+for (const [path, markdown] of Object.entries(
+  import.meta.glob<string>('/content/*/*/schedule.md', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }),
+)) {
+  const match = MEMBER_SCHEDULE_PATH_PATTERN.exec(path);
+  if (match !== null) scheduleByMember.set(keyOf(match[1], match[2]), markdown);
+}
+
+/*
+ * 멤버 폴더에는 노트 말고 개인 일정(schedule.md)도 있다 — 숫자로 시작하는 파일만 집는다.
+ * `*.md`로 넓게 잡으면 개인 일정이 여기서도 걸려, 위에서 이미 정적으로 읽은 파일에
+ * 쓰이지도 않을 lazy 청크가 하나 더 생긴다 (빌드가 INEFFECTIVE_DYNAMIC_IMPORT로 경고한다).
+ */
 const noteLoadersByMember = new Map<string, Map<number, () => Promise<string>>>();
 for (const [path, load] of Object.entries(
-  import.meta.glob<string>('/content/*/*/*.md', {
+  import.meta.glob<string>('/content/*/*/[0-9]*.md', {
     query: '?raw',
     import: 'default',
   }),
@@ -119,6 +140,18 @@ export function members(): readonly Member[] {
   return list;
 }
 
+/**
+ * members.json에 있는 이름인지.
+ *
+ * 노트는 주소를 직접 타고 들어올 수 있어 이름을 그대로 믿으면 안 된다 —
+ * 없는 사람으로 들어와도 목차에서 챕터를 찾아버려 "아직 작성한 내용이 없어요"라는
+ * 정상 화면처럼 보인다. 오타 URL은 404로 보내야 한다.
+ */
+export function isKnownMember(name: string): boolean {
+  const target = normalizeName(name);
+  return members().some((member) => normalizeName(member.name) === target);
+}
+
 /** 저장소 안에서 챕터 노트를 두는 경로 (아직 노트가 없을 때 안내에 사용) */
 export function chapterNotePath(member: string, chapterId: number): string {
   return `content/${BOOK}/${member}/${chapterId}.md`;
@@ -135,12 +168,16 @@ export function chaptersMarkdown(): string {
   return markdown;
 }
 
-export function scheduleMarkdown(): string {
-  const markdown = scheduleByBook.get(normalizeName(BOOK));
-  if (markdown === undefined) {
+/** 자기 폴더의 일정이 있으면 그것을, 없으면 책 공용 일정을 쓴다 */
+export function scheduleMarkdown(member: string): string {
+  const own = scheduleByMember.get(keyOf(BOOK, member));
+  if (own !== undefined) return own;
+
+  const shared = scheduleByBook.get(normalizeName(BOOK));
+  if (shared === undefined) {
     throw new Error(`content/${BOOK}/schedule.md를 찾지 못했습니다.`);
   }
-  return markdown;
+  return shared;
 }
 
 /** 노트 파일이 존재하는 챕터 = 그 멤버가 완료한 챕터 */
