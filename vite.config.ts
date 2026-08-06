@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
+import babel from '@rolldown/plugin-babel';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
@@ -126,7 +127,18 @@ function noteImageSizes(): Plugin {
  */
 export default defineConfig({
   base: process.env.VITE_BASE ?? '/',
-  plugins: [vanillaExtractPlugin(), react(), noteImageSizes(), spaFallbackHtml()],
+  /*
+   * React Compiler가 메모이제이션을 대신 넣어준다.
+   * 이 저장소는 이미 컴파일러의 정적 분석 규칙(eslint-plugin-react-hooks v7의
+   * react-hooks/refs·set-state-in-effect 등)을 통과하고 있어 그대로 켤 수 있다.
+   */
+  plugins: [
+    vanillaExtractPlugin(),
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
+    noteImageSizes(),
+    spaFallbackHtml(),
+  ],
   test: {
     environment: 'node',
     include: ['src/tests/**/*.test.ts'],

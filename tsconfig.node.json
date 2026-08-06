@@ -1,0 +1,18 @@
+{
+  "//": "빌드 설정 파일용. src와 나눠 두는 이유는 node 타입이 브라우저 코드로 새지 않게 하려는 것이다 — vite.config.ts는 node:fs로 이미지 헤더를 직접 읽는다.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "types": ["node", "vite/client"],
+    "noEmit": true
+  },
+  "include": ["vite.config.ts"]
+}
