@@ -3,8 +3,8 @@ import { useEffect, useRef } from 'react';
 
 import { BottomCta } from '../../components/BottomCta';
 import { Button } from '../../components/Button';
+import { LottieCharacter } from '../../components/LottieCharacter';
 import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
-import * as screen from '../../styles/screen.css';
 import * as styles from './IntroPage.css';
 
 // Slash 23 메인 세션 애니메이션 — 외부 CDN 의존 없이 로컬(public/media)에서 서빙한다
@@ -13,8 +13,6 @@ const INTRO_POSTER_URL = `${import.meta.env.BASE_URL}media/intro-poster.jpg`;
 
 const MEDIA_ENTER = { opacity: 0, scale: 0.96 };
 const MEDIA_SETTLED = { opacity: 1, scale: 1 };
-const TEXT_ENTER = { opacity: 0, y: 16 };
-const TEXT_SETTLED = { opacity: 1, y: 0 };
 
 /**
  * 인트로로 돌아왔을 때 영상을 처음부터 다시 틀면 방금 본 장면을 또 보게 된다 —
@@ -73,22 +71,22 @@ export function IntroPage({ onStart }: IntroPageProps) {
         />
       </m.div>
 
-      <m.h1
-        className={`${screen.title} ${styles.introTitle}`}
-        initial={animateEntrance ? TEXT_ENTER : TEXT_SETTLED}
-        animate={TEXT_SETTLED}
-        transition={{ duration: 0.4, delay: 0.15, ease: 'easeOut' }}
+      <m.div
+        className={styles.greeting}
+        initial={animateEntrance ? MEDIA_ENTER : MEDIA_SETTLED}
+        animate={MEDIA_SETTLED}
+        transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
       >
-        Dev Study Club
-      </m.h1>
-      <m.p
-        className={screen.subtitle}
-        initial={animateEntrance ? TEXT_ENTER : TEXT_SETTLED}
-        animate={TEXT_SETTLED}
-        transition={{ duration: 0.4, delay: 0.25, ease: 'easeOut' }}
-      >
-        함께 배우고, 꾸준히 기록해요
-      </m.p>
+        <span className={styles.bubble}>
+          안녕하세요! 듀오예요!
+          <span className={styles.bubbleTail} aria-hidden>
+            <span />
+          </span>
+        </span>
+        <div className={styles.duo}>
+          <LottieCharacter name="intro-duo" />
+        </div>
+      </m.div>
 
       <BottomCta>
         <Button onClick={onStart}>시작하기</Button>
