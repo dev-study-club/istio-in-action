@@ -8,8 +8,16 @@ import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
 import * as styles from './IntroPage.css';
 
 // Slash 23 메인 세션 애니메이션 — 외부 CDN 의존 없이 로컬(public/media)에서 서빙한다
-const INTRO_VIDEO_URL = `${import.meta.env.BASE_URL}media/intro.mp4`;
+const INTRO_AV1_URL = `${import.meta.env.BASE_URL}media/intro.av1.mp4`;
+const INTRO_H264_URL = `${import.meta.env.BASE_URL}media/intro.mp4`;
 const INTRO_POSTER_URL = `${import.meta.env.BASE_URL}media/intro-poster.jpg`;
+
+/*
+ * AV1 디코더는 Safari 17+ 중에서도 하드웨어가 받쳐주는 기기(A17 Pro·M3 이상)에만 있다 —
+ * codecs까지 적어야 없는 브라우저가 이 source를 건너뛰고 아래 h264로 내려간다.
+ * video/mp4만 쓰면 물었다가 재생에 실패한다. 값은 profile 0(Main)/level idx 4/Main tier/8bit.
+ */
+const INTRO_AV1_TYPE = 'video/mp4; codecs="av01.0.04M.08"';
 
 const MEDIA_ENTER = { opacity: 0, scale: 0.96 };
 const MEDIA_SETTLED = { opacity: 1, scale: 1 };
@@ -57,18 +65,20 @@ export function IntroPage({ onStart }: IntroPageProps) {
         animate={MEDIA_SETTLED}
         transition={{ duration: 0.5, ease: 'easeOut' }}
       >
-        {/* 17MB 원본 — poster를 먼저 그리고 재생에 필요한 만큼만 스트리밍한다 */}
+        {/* AV1 3.0MB / h264 4.0MB — poster를 먼저 그리고 재생에 필요한 만큼만 스트리밍한다 */}
         <video
           ref={videoRef}
           className={styles.video}
-          src={INTRO_VIDEO_URL}
           poster={INTRO_POSTER_URL}
           preload="metadata"
           autoPlay
           muted
           loop
           playsInline
-        />
+        >
+          <source src={INTRO_AV1_URL} type={INTRO_AV1_TYPE} />
+          <source src={INTRO_H264_URL} type="video/mp4" />
+        </video>
       </m.div>
 
       <m.div
