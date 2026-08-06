@@ -11,6 +11,18 @@ export const skeleton = style({
   borderRadius: 12,
   background: vars.fill.neutral,
   animation: `${pulse} 1.2s ease-in-out infinite`,
+  // 자리를 잡아주는 게 본래 역할이라, 깜빡임만 걷고 회색 블록은 그대로 남긴다
+  '@media': {
+    '(prefers-reduced-motion: reduce)': { animation: 'none' },
+  },
+});
+
+/** 노트 본문이 오는 자리 — 제목만 덩그러니 남지 않게 글줄 모양으로 채운다 */
+export const noteSkeleton = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+  marginTop: 24,
 });
 
 export const errorScreen = style({

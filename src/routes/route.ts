@@ -51,11 +51,28 @@ function parsePath(path: string): Route {
 
   const match = NOTE_PATTERN.exec(path);
   if (match !== null) {
-    return { name: 'note', member: decodeURIComponent(match[1]), chapterId: Number(match[2]) };
+    const member = decodeMember(match[1]);
+    if (member !== null) return { name: 'note', member, chapterId: Number(match[2]) };
   }
 
   // 모르는 주소를 인트로로 흘려보내면 오타 URL이 정상 화면처럼 보인다
   return { name: 'notFound' };
+}
+
+/**
+ * 주소에 담긴 이름을 사람 이름으로 되돌린다. 되돌릴 수 없으면 null.
+ *
+ * NOTE_PATTERN의 `[^/]+`는 `%zz`처럼 깨진 퍼센트 인코딩도 통과시키는데
+ * decodeURIComponent는 거기서 URIError를 던진다. 이 함수는 App이 렌더되는 도중
+ * (useSyncExternalStore → readRoute) 불려서 ErrorBoundary 바깥이라,
+ * 그대로 두면 잘못 복사된 링크 하나에 화면 전체가 빈 채로 멈춘다.
+ */
+function decodeMember(raw: string): string | null {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
 }
 
 /**

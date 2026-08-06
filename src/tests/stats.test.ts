@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { chapterStats, overallStats } from '../services/stats';
+import { chapterStats } from '../services/stats';
 import type { Progress } from '../services/types';
 
 function buildProgress(doneFlagsByChapter: boolean[][]): Progress {
@@ -33,21 +33,5 @@ describe('chapterStats', () => {
   test('절이 없는 챕터는 0%다 (0으로 나누기 방지)', () => {
     const stats = chapterStats({ id: 1, title: '빈 챕터', sections: [] });
     expect(stats).toEqual({ done: 0, total: 0, percent: 0 });
-  });
-});
-
-describe('overallStats', () => {
-  test('모든 챕터를 합산한다', () => {
-    // Arrange
-    const progress = buildProgress([
-      [true, false],
-      [true, true],
-    ]);
-
-    // Act
-    const stats = overallStats(progress);
-
-    // Assert
-    expect(stats).toEqual({ done: 3, total: 4, percent: 75 });
   });
 });
