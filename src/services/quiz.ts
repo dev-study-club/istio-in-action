@@ -65,6 +65,18 @@ export function parseQuiz(data: unknown): QuizQuestion[] {
   return questions.map(parseQuestion);
 }
 
+/**
+ * 다음에 낼 문제 순서.
+ *
+ * 틀린 문제는 버리지 않고 맨 뒤로 돌린다 — 맞힐 때까지 레슨이 끝나지 않아야
+ * "틀린 채로 통과"가 생기지 않는다. 맞히면 큐에서 빠지고, 큐가 비면 레슨이 끝난다.
+ */
+export function advanceQueue(queue: readonly number[], correct: boolean): number[] {
+  const [current, ...rest] = queue;
+  if (current === undefined) return [];
+  return correct ? rest : [...rest, current];
+}
+
 /** 안 푼 문제(null)가 하나라도 있으면 전부 정답이 아니다 */
 export function isAllCorrect(
   questions: readonly QuizQuestion[],

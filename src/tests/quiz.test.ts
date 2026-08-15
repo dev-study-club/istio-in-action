@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { isAllCorrect, parseQuiz, type QuizQuestion } from '../services/quiz';
+import { advanceQueue, isAllCorrect, parseQuiz, type QuizQuestion } from '../services/quiz';
 
 function question(overrides: Partial<QuizQuestion> = {}): QuizQuestion {
   return {
@@ -43,6 +43,40 @@ describe('parseQuiz', () => {
     ['explanation 누락', { questions: [{ ...question(), explanation: undefined }] }],
   ])('%s이면 던진다', (_label, data) => {
     expect(() => parseQuiz(data)).toThrow();
+  });
+});
+
+describe('advanceQueue', () => {
+  test('맞히면 그 문제는 큐에서 빠진다', () => {
+    expect(advanceQueue([0, 1, 2], true)).toEqual([1, 2]);
+  });
+
+  /* 틀린 문제를 버리면 "틀린 채로 통과"가 생긴다 — 맞힐 때까지 다시 나와야 한다 */
+  test('틀리면 맨 뒤로 돌아가 다시 나온다', () => {
+    expect(advanceQueue([0, 1, 2], false)).toEqual([1, 2, 0]);
+  });
+
+  test('마지막 한 문제를 틀리면 그 문제만 남아 곧바로 다시 나온다', () => {
+    expect(advanceQueue([5], false)).toEqual([5]);
+  });
+
+  test('마지막 한 문제를 맞히면 큐가 빈다 — 레슨이 끝나는 신호다', () => {
+    expect(advanceQueue([5], true)).toEqual([]);
+  });
+
+  test('빈 큐는 그대로 빈 큐다', () => {
+    expect(advanceQueue([], true)).toEqual([]);
+  });
+
+  test('원본 큐를 건드리지 않는다', () => {
+    // Arrange
+    const queue = [0, 1, 2];
+
+    // Act
+    advanceQueue(queue, false);
+
+    // Assert
+    expect(queue, `원본이 바뀌었다: ${queue.join(',')}`).toEqual([0, 1, 2]);
   });
 });
 

@@ -2,7 +2,7 @@ import { ErrorBoundary, Suspense } from '@suspensive/react';
 import { lazy, use, useEffect, useState } from 'react';
 
 import { chapterQuizPromise } from '../../services/content';
-import { type QuizQuestion } from '../../services/quiz';
+import { advanceQueue, type QuizQuestion } from '../../services/quiz';
 import {
   markNotified,
   notifyQuizSuccess,
@@ -130,7 +130,11 @@ function Lesson({
 }: QuizWidgetProps & { promise: Promise<QuizQuestion[]> }) {
   const questions = use(promise);
 
-  const [index, setIndex] = useState(0);
+  /*
+   * 남은 문제 순서. 맨 앞이 지금 푸는 문제다.
+   * 틀리면 그 문제가 맨 뒤로 돌아가 다시 나온다 — 큐가 비어야 레슨이 끝난다.
+   */
+  const [queue, setQueue] = useState<readonly number[]>(() => questions.map((_, i) => i));
   const [selected, setSelected] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
   const [lives, setLives] = useState(MAX_LIVES);
@@ -138,9 +142,11 @@ function Lesson({
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [notify, setNotify] = useState<NotifyResult | 'already' | null>(null);
 
-  const question = questions[index];
-  const isLast = index === questions.length - 1;
+  const index = queue[0];
+  const question = index === undefined ? undefined : questions[index];
   const isCorrect = checked && selected === question?.answer;
+  /** 맞혀서 큐에서 빠진 문제 수 — 진행 바는 이 값으로 찬다 */
+  const solvedCount = questions.length - queue.length;
 
   const report = (solved: number, remaining: number) =>
     onStatus?.({ ratio: solved / questions.length, lives: remaining });
@@ -155,7 +161,8 @@ function Lesson({
       setLives(remaining);
       setWrongCount((prev) => prev + 1);
     }
-    report(index + 1, remaining);
+    /* 틀린 문제는 아직 큐에 남아 있다 — 진행 바도 그만큼 차지 않는다 */
+    report(correct ? solvedCount + 1 : solvedCount, remaining);
   };
 
   /*
@@ -182,17 +189,20 @@ function Lesson({
       finish('failed');
       return;
     }
-    if (isLast) {
+
+    const rest = advanceQueue(queue, isCorrect);
+    if (rest.length === 0) {
+      // 한 번도 틀리지 않았을 때만 만점이다 — 다시 나온 문제를 맞힌 건 만점이 아니다
       finish(wrongCount === 0 ? 'perfect' : 'survived');
       return;
     }
-    setIndex((prev) => prev + 1);
+    setQueue(rest);
     setSelected(null);
     setChecked(false);
   };
 
   const restart = () => {
-    setIndex(0);
+    setQueue(questions.map((_, i) => i));
     setSelected(null);
     setChecked(false);
     setLives(MAX_LIVES);
@@ -226,7 +236,6 @@ function Lesson({
 
   if (outcome !== null) {
     const notifyMessage = notify === null ? null : NOTIFY_MESSAGE[notify];
-    const solved = questions.length - wrongCount;
     return (
       <section className={styles.card} aria-label="이해도 체크 결과">
         <div className={styles.result}>
@@ -241,8 +250,8 @@ function Lesson({
           </p>
           <p className={styles.resultScore}>
             {outcome === 'failed'
-              ? `${questions.length}문제 중 ${solved}문제까지 맞혔어요`
-              : `${questions.length}문제 중 ${solved}문제 정답`}
+              ? `${questions.length}문제 중 ${solvedCount}문제까지 맞혔어요`
+              : `${questions.length}문제 모두 맞혔어요${wrongCount > 0 ? ` (${wrongCount}번 틀리고 다시 풀었어요)` : ''}`}
           </p>
           {outcome !== 'failed' && notifyMessage !== null && (
             <p className={styles.notifyStatus}>{notifyMessage}</p>
@@ -260,6 +269,8 @@ function Lesson({
   if (question === undefined) return null;
 
   const outOfLives = checked && lives === 0;
+  /* 지금 맞히면 큐가 비어 레슨이 끝난다 — 틀리면 이 문제가 다시 돌아오므로 끝이 아니다 */
+  const isLastLeft = queue.length === 1 && isCorrect;
 
   return (
     <section className={styles.card} aria-label="이해도 체크">
@@ -271,7 +282,7 @@ function Lesson({
         <p className={styles.bubble}>{question.question}</p>
       </div>
 
-      <div className={styles.choiceList} role="group" aria-label={`${index + 1}번 문제 보기`}>
+      <div className={styles.choiceList} role="group" aria-label="보기">
         {question.choices.map((label, choiceIndex) => (
           <button
             key={label}
@@ -299,12 +310,16 @@ function Lesson({
             {isCorrect ? '정답이에요! 멋져요 🎉' : `아쉬워요 — 정답은 ${question.answer + 1}번`}
           </p>
           <p className={styles.feedbackBody}>💡 {question.explanation}</p>
+          {/* 틀린 문제는 사라지지 않는다 — 다시 나온다는 걸 미리 알려야 갑자기 나와도 놀라지 않는다 */}
+          {!isCorrect && lives > 0 && (
+            <p className={styles.feedbackBody}>이 문제는 뒤에서 다시 나와요.</p>
+          )}
         </div>
       )}
 
       <div className={styles.footer}>
         {checked ? (
-          <Button onClick={next}>{outOfLives || isLast ? '결과 보기' : '계속하기'}</Button>
+          <Button onClick={next}>{outOfLives || isLastLeft ? '결과 보기' : '계속하기'}</Button>
         ) : (
           <Button disabled={selected === null} onClick={check}>
             {selected === null ? '답을 골라주세요' : '확인'}
@@ -314,7 +329,8 @@ function Lesson({
       </div>
 
       <span className={styles.srOnly} aria-live="polite">
-        {questions.length}문제 중 {index + 1}번째 문제, 남은 목숨 {lives}개
+        {questions.length}문제 중 {solvedCount}문제 완료, 남은 문제 {queue.length}개, 남은 목숨{' '}
+        {lives}개
       </span>
     </section>
   );
