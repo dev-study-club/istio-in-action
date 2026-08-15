@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "question": "`istioctl kube-inject -f catalog.yaml` 명령이 실제로 하는 일은?",
+      "choices": [
+        "클러스터에 배포된 파드를 즉시 재시작해 사이드카를 주입한다",
+        "기존 쿠버네티스 배포 YAML을 읽어 엔보이 사이드카 프록시 설정을 끼워 넣은 새 YAML을 화면에 출력한다",
+        "네임스페이스에 자동 주입 레이블(istio-injection=enabled)을 붙인다",
+        "사이드카 프록시의 로그 레벨을 warning으로 변경한다"
+      ],
+      "answer": 1,
+      "explanation": "kube-inject는 평범한 배포 파일을 읽어 istio-init 초기화 컨테이너와 istio-proxy 컨테이너 등이 추가된 새 YAML 텍스트를 출력할 뿐이며, 클러스터 상태를 바꾸지 않습니다."
+    },
+    {
+      "question": "2장에서 설치한 샘플 애드온 중, 요청이 여러 마이크로서비스를 거치는 경로와 각 단계의 지연 시간을 추적하는 분산 트레이싱 도구는?",
+      "choices": ["Kiali", "Grafana", "Jaeger", "Prometheus"],
+      "answer": 2,
+      "explanation": "Jaeger는 분산 트레이싱을 통해 요청이 거친 경로와 각 단계 소요 시간을 추적해 병목이나 버그를 찾는 데 씁니다. Kiali는 토폴로지 시각화, Prometheus는 메트릭 수집, Grafana는 그 메트릭의 대시보드입니다."
+    },
+    {
+      "question": "다크 론치(Dark Launch) 실습에서 catalog v2 응답(imageUrl 포함)을 받아내려면 어떻게 했는가?",
+      "choices": [
+        "DestinationRule의 subset을 version-v2로 바꿔 모든 트래픽을 v2로 옮겼다",
+        "catalog v1 디플로이먼트를 삭제해 v2만 남겼다",
+        "인그레스 게이트웨이의 리스닝 포트를 8080으로 변경했다",
+        "요청에 `x-dark-launch: v2` 헤더를 붙였고, 헤더가 없는 일반 요청은 계속 v1로 갔다"
+      ],
+      "answer": 3,
+      "explanation": "VirtualService의 헤더 매칭을 이용해 `x-dark-launch: v2` 헤더가 있는 요청만 v2로 유도했고, 나머지 사용자는 그대로 v1 응답을 받았습니다."
+    }
+  ]
+}

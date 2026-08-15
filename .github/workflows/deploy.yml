@@ -50,10 +50,14 @@ jobs:
       # GitHub Pages 프로젝트 사이트는 /<저장소이름>/ 아래에 놓인다 — 저장소 이름을 직접 받아
       # 절대 경로 base를 만든다. 이름이 바뀌어도 워크플로가 알아서 따라간다.
       # SPA 폴백용 404.html은 빌드가 함께 만든다(vite.config.ts).
+      # 퀴즈 성공 알림용 Discord 웹훅. 정적 사이트라 서버가 없어 빌드에 심는다 —
+      # 이 값은 배포된 번들에 그대로 들어가니 채널에 글만 쓸 수 있는 웹훅을 쓸 것.
+      # 시크릿이 없으면 알림만 조용히 빠지고 퀴즈는 그대로 동작한다.
       - name: build
         run: pnpm build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       # enablement: 저장소에 Pages가 꺼져 있으면 워크플로가 직접 켠다 —
       # Settings에서 손으로 켜두지 않아도 첫 배포가 성공한다.

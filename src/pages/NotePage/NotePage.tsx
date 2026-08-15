@@ -2,6 +2,7 @@ import { m } from 'motion/react';
 
 import { BackButton } from '../../components/BackButton';
 import { ChapterNote } from '../../components/ChapterNote';
+import { QuizWidget } from '../../components/QuizWidget';
 import { ErrorScreen } from '../../components/ScreenStates';
 import { goToFunnel } from '../../routes/route';
 import { chapterNotePath } from '../../services/content';
@@ -49,7 +50,11 @@ export function NotePage({ member, chapterId }: NotePageProps) {
       </nav>
       <h1 className={screen.title}>{chapter.title}</h1>
       {completedChapters.has(chapter.id) ? (
-        <ChapterNote member={member} chapterId={chapter.id} />
+        <>
+          <ChapterNote member={member} chapterId={chapter.id} />
+          {/* 퀴즈는 노트를 읽은 뒤 푸는 것이라 노트가 있는 챕터에만 세운다 */}
+          <QuizWidget member={member} chapterId={chapter.id} chapterTitle={chapter.title} />
+        </>
       ) : (
         <div className={styles.emptyNote}>
           {/* 둥실 떠 있게 해 빈 화면이 고장난 것처럼 보이지 않게 한다.

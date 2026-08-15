@@ -13,6 +13,7 @@
  */
 
 import type { Member } from './types';
+import { parseQuiz, type QuizQuestion } from './quiz';
 
 /**
  * Vite는 glob 패턴에 리터럴만 허용해 책 이름을 상수로 끼워 넣을 수 없다.
@@ -131,6 +132,30 @@ const completedByMember = new Map<string, ReadonlySet<number>>(
 /** 노트 본문 프라미스 캐시 — use()가 같은 프라미스를 받아야 렌더마다 다시 로드하지 않는다 */
 const notePromises = new Map<string, Promise<string>>();
 
+/**
+ * 퀴즈는 챕터에 속한다 — 같은 책을 읽으므로 목차처럼 책 단위로 두고 멤버가 공유한다.
+ * 노트처럼 lazy로 나눈다: 해당 챕터를 열 때만 필요하고 앞으로 계속 늘어날 콘텐츠다.
+ */
+const QUIZ_PATH_PATTERN = /\/content\/([^/]+)\/quiz\/(\d+)\.json$/;
+
+const quizLoadersByBook = new Map<string, Map<number, () => Promise<unknown>>>();
+for (const [path, load] of Object.entries(
+  import.meta.glob<unknown>('/content/*/quiz/[0-9]*.json', { import: 'default' }),
+)) {
+  const match = QUIZ_PATH_PATTERN.exec(path);
+  if (match === null) continue;
+
+  const book = normalizeName(match[1]);
+  let loaders = quizLoadersByBook.get(book);
+  if (!loaders) {
+    loaders = new Map();
+    quizLoadersByBook.set(book, loaders);
+  }
+  loaders.set(Number(match[2]), load);
+}
+
+const quizPromises = new Map<number, Promise<QuizQuestion[]>>();
+
 /** 표시 순서는 members.json의 배열 순서를 그대로 따른다 */
 export function members(): readonly Member[] {
   const list = membersByBook.get(normalizeName(BOOK));
@@ -183,6 +208,19 @@ export function scheduleMarkdown(member: string): string {
 /** 노트 파일이 존재하는 챕터 = 그 멤버가 완료한 챕터 */
 export function completedChapterIds(member: string): ReadonlySet<number> {
   return completedByMember.get(keyOf(BOOK, member)) ?? EMPTY_CHAPTER_IDS;
+}
+
+/** 퀴즈가 없으면 null — 퀴즈는 보조 콘텐츠라 아직 안 만든 챕터가 있는 것이 정상이다 */
+export function chapterQuizPromise(chapterId: number): Promise<QuizQuestion[]> | null {
+  const load = quizLoadersByBook.get(normalizeName(BOOK))?.get(chapterId);
+  if (!load) return null;
+
+  let promise = quizPromises.get(chapterId);
+  if (!promise) {
+    promise = load().then(parseQuiz);
+    quizPromises.set(chapterId, promise);
+  }
+  return promise;
 }
 
 /** 노트가 없으면 null — 노트는 보조 데이터라 없는 것이 정상이다 */

@@ -1,0 +1,1 @@
+export { QuizWidget } from './QuizWidget';

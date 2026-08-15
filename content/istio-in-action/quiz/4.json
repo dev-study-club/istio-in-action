@@ -1,0 +1,37 @@
+{
+  "questions": [
+    {
+      "question": "이스티오가 쿠버네티스 인그레스 v1 대신 자체 인그레스 패턴을 백지에서 설계하면서 택한 책임 분리는?",
+      "choices": [
+        "Gateway가 L7 라우팅을, VirtualService가 L4·L5 속성을 처리한다",
+        "Gateway가 L4·L5 문제(포트·프로토콜·가상 호스트)를, VirtualService가 L7 라우팅 문제를 처리한다",
+        "둘 다 L7만 처리하고 L4·L5는 쿠버네티스 Service가 전담한다",
+        "Gateway가 사이드카 주입을, VirtualService가 인증서 발급을 담당한다"
+      ],
+      "answer": 1,
+      "explanation": "이스티오는 4·5계층 속성을 7계층 라우팅 문제에서 분리해 Gateway가 포트·프로토콜·가상 호스트를, VirtualService가 라우팅 규칙을 맡도록 설계했습니다."
+    },
+    {
+      "question": "Gateway 리소스에서 `tls.mode`를 `PASSTHROUGH`로 설정하면 인그레스 게이트웨이는 어떻게 동작하는가?",
+      "choices": [
+        "TLS를 종료하고 평문 HTTP로 백엔드에 전달한다",
+        "HTTP로 들어온 요청을 HTTPS 포트로 리다이렉트한다",
+        "SNI 호스트네임만 보고 트래픽을 백엔드로 라우팅하며, TLS 커넥션 종료는 백엔드 서비스가 처리한다",
+        "클라이언트 인증서를 검증하는 상호 TLS(mTLS)를 강제한다"
+      ],
+      "answer": 2,
+      "explanation": "PASSTHROUGH 모드에서 게이트웨이는 SNI 헤더를 보고 라우팅만 하고 커넥션은 그대로 통과시키며, TLS 종료는 실제 서비스가 담당합니다."
+    },
+    {
+      "question": "메시에 서비스가 많아 게이트웨이 프록시 설정이 비대해지는 문제를 줄이려고 노트의 운영 팁에서 켠 설정은?",
+      "choices": [
+        "pilot 컴포넌트에 `PILOT_FILTER_GATEWAY_CLUSTER_CONFIG=true` 환경변수를 설정한다",
+        "게이트웨이에 Sidecar 리소스를 적용해 노출 범위를 좁힌다",
+        "`meshConfig.accessLogFile`을 `/dev/stdout`으로 설정한다",
+        "게이트웨이 Deployment에 `sidecar.istio.io/inject: \"true\"` 애노테이션을 붙인다"
+      ],
+      "answer": 0,
+      "explanation": "게이트웨이에는 메시의 모든 서비스 설정이 내려가므로 pilot의 PILOT_FILTER_GATEWAY_CLUSTER_CONFIG를 켜서 게이트웨이 관련 설정만 남깁니다. Sidecar 리소스는 게이트웨이에 적용되지 않고, 나머지 둘은 액세스 로그와 게이트웨이 주입에 대한 설정입니다."
+    }
+  ]
+}
