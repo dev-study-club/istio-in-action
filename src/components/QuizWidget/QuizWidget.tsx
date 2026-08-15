@@ -17,6 +17,11 @@ interface QuizWidgetProps {
   member: string;
   chapterId: number;
   chapterTitle: string;
+  /**
+   * 0~1 진행률 — 화면 위 진행 바를 그리는 쪽에 올려준다.
+   * 렌더 중이 아니라 문제를 넘기는 순간에만 부른다 (진행은 사용자의 행동으로만 바뀐다).
+   */
+  onProgress?: (ratio: number) => void;
 }
 
 /**
@@ -26,7 +31,7 @@ interface QuizWidgetProps {
  * 퀴즈는 보조 콘텐츠다: 파일이 없으면 아무것도 그리지 않고,
  * 로드 실패도 노트 화면을 막지 않도록 ChapterNote와 같은 경계로 감싼다.
  */
-export function QuizWidget({ member, chapterId, chapterTitle }: QuizWidgetProps) {
+export function QuizWidget({ member, chapterId, chapterTitle, onProgress }: QuizWidgetProps) {
   const promise = chapterQuizPromise(chapterId);
   if (promise === null) return null;
 
@@ -38,6 +43,7 @@ export function QuizWidget({ member, chapterId, chapterTitle }: QuizWidgetProps)
           member={member}
           chapterId={chapterId}
           chapterTitle={chapterTitle}
+          onProgress={onProgress}
         />
       </Suspense>
     </ErrorBoundary>
@@ -67,6 +73,7 @@ function Lesson({
   member,
   chapterId,
   chapterTitle,
+  onProgress,
 }: QuizWidgetProps & { promise: Promise<QuizQuestion[]> }) {
   const questions = use(promise);
 
@@ -85,10 +92,14 @@ function Lesson({
   const solved = isAllCorrect(questions, answers);
   const correctCount = questions.filter((q, i) => answers[i] === q.answer).length;
 
+  /* 채점 전에는 지금 문제를 "푸는 중"으로 보고 이전까지만 채운다 */
+  const report = (solvedCount: number) => onProgress?.(solvedCount / questions.length);
+
   const check = () => {
     if (selected === null || checked) return;
     setChecked(true);
     setAnswers((prev) => prev.map((answer, i) => (i === index ? selected : answer)));
+    report(index + 1);
   };
 
   /*
@@ -127,6 +138,7 @@ function Lesson({
     setAnswers(questions.map(() => null));
     setFinished(false);
     setNotify(null);
+    report(0);
   };
 
   /* 듀오링고처럼 1~4로 고르고 Enter로 넘어간다 — 마우스를 오가지 않아도 풀린다 */
@@ -180,21 +192,8 @@ function Lesson({
 
   if (question === undefined) return null;
 
-  /* 채점 전에는 지금 문제를 "푸는 중"으로 보고 이전까지만 채운다 */
-  const progressRatio = (index + (checked ? 1 : 0)) / questions.length;
-
   return (
     <section className={styles.card} aria-label="이해도 체크">
-      <div
-        className={styles.progressTrack}
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={questions.length}
-        aria-valuenow={index + (checked ? 1 : 0)}
-        aria-label="퀴즈 진행률"
-      >
-        <div className={styles.progressFill} style={{ width: `${progressRatio * 100}%` }} />
-      </div>
       <strong className={styles.progressLabel}>
         🧠 이해도 체크 · {index + 1} / {questions.length}
       </strong>

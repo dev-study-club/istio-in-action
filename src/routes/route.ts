@@ -17,12 +17,15 @@ export type Route =
   | { name: 'intro' }
   | { name: 'funnel' }
   | { name: 'note'; member: string; chapterId: number }
+  | { name: 'quiz'; member: string; chapterId: number }
   | { name: 'notFound' };
 
 /** 배포 위치(예: '/istio-in-action/')를 떼어내야 우리 경로만 남는다 */
 const BASE = import.meta.env.BASE_URL;
 
 const NOTE_PATTERN = /^note\/([^/]+)\/(\d+)$/;
+/** 퀴즈는 노트와 짝이라 주소 모양도 같게 둔다 — 링크를 서로 바꿔 붙여도 헷갈리지 않는다 */
+const QUIZ_PATTERN = /^quiz\/([^/]+)\/(\d+)$/;
 
 /**
  * @use-funnel은 단계를 옮길 때 pushState로 URL을 통째로 갈아치우며 경로를 base로 되돌린다.
@@ -49,10 +52,16 @@ function parsePath(path: string): Route {
   if (path === '') return { name: 'intro' };
   if (path === 'member') return { name: 'funnel' };
 
-  const match = NOTE_PATTERN.exec(path);
-  if (match !== null) {
-    const member = decodeMember(match[1]);
-    if (member !== null) return { name: 'note', member, chapterId: Number(match[2]) };
+  const note = NOTE_PATTERN.exec(path);
+  if (note !== null) {
+    const member = decodeMember(note[1]);
+    if (member !== null) return { name: 'note', member, chapterId: Number(note[2]) };
+  }
+
+  const quiz = QUIZ_PATTERN.exec(path);
+  if (quiz !== null) {
+    const member = decodeMember(quiz[1]);
+    if (member !== null) return { name: 'quiz', member, chapterId: Number(quiz[2]) };
   }
 
   // 모르는 주소를 인트로로 흘려보내면 오타 URL이 정상 화면처럼 보인다
@@ -154,4 +163,8 @@ export function goToFunnel(): void {
 
 export function goToNote(member: string, chapterId: number): void {
   navigate(`note/${encodeURIComponent(member)}/${chapterId}`);
+}
+
+export function goToQuiz(member: string, chapterId: number): void {
+  navigate(`quiz/${encodeURIComponent(member)}/${chapterId}`);
 }

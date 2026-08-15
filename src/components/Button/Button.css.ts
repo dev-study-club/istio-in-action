@@ -27,4 +27,19 @@ export const button = styleVariants({
   ],
   weak: [base, style({ background: vars.fill['brand-weak'], color: vars.text.brand })],
   ghost: [base, style({ height: 44, color: vars.text['neutral-weak'], fontSize: 15 })],
+  /* 상단 내비게이션에 들어가는 작은 버튼 — 폭을 글자에 맞춰 줄인다 */
+  pill: [
+    base,
+    style({
+      width: 'auto',
+      height: 36,
+      padding: '0 14px',
+      borderRadius: 12,
+      background: vars.fill.brand,
+      color: vars.text['on-brand'],
+      fontSize: 14,
+      whiteSpace: 'nowrap',
+      selectors: { '&:active': { background: vars.fill['brand-strong'] } },
+    }),
+  ],
 });

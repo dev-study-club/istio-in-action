@@ -15,8 +15,14 @@ export const overlay = style({
   background: vars.fill.canvas,
 });
 
-/** 로티를 화면 한가운데 놓는 자리 */
-export const lottieStage = style({
+/** 1단계(듀오)는 화면을 꽉 쓰는 연출이라 오버레이를 그대로 채운다 */
+export const fullStage = style({
+  width: '100%',
+  height: '100%',
+});
+
+/** 불사조를 화면 한가운데 놓는 자리 */
+export const fireStage = style({
   width: '100%',
   height: '100%',
   display: 'grid',
@@ -24,11 +30,13 @@ export const lottieStage = style({
 });
 
 /*
- * 로티는 원래 크기(375×398) 언저리로 묶는다.
- * svg 렌더러는 담긴 상자를 비율 그대로 채우기 때문에, 상자를 화면 전체로 두면
- * 뷰포트 높이만큼 확대돼 화면을 뒤덮는다 — 잠깐 스치는 연출에는 너무 크다.
+ * 불사조는 상자에 묶어 둔다.
+ *
+ * Rive는 부모 크기를 받아 Fit.Contain으로 맞추기 때문에, 상자를 화면 전체로 두면
+ * 뷰포트만큼 확대돼 불꽃이 화면을 뒤덮고 형체가 흐려진다 — 앞서 여기 있던 로티도 같은 이유로
+ * 원래 크기 언저리로 묶여 있었다.
  */
-export const lottieBox = style({
-  width: 'min(70vw, 360px)',
-  aspectRatio: '375 / 398',
+export const fireBox = style({
+  width: 'min(78vw, 380px)',
+  aspectRatio: '1 / 1',
 });

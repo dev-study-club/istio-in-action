@@ -210,6 +210,11 @@ export function completedChapterIds(member: string): ReadonlySet<number> {
   return completedByMember.get(keyOf(BOOK, member)) ?? EMPTY_CHAPTER_IDS;
 }
 
+/** 퀴즈 파일이 있는 챕터인지 — 노트 화면의 "문제 풀러 가기"를 띄울지 정할 때 쓴다 (로드는 하지 않는다) */
+export function hasChapterQuiz(chapterId: number): boolean {
+  return quizLoadersByBook.get(normalizeName(BOOK))?.has(chapterId) === true;
+}
+
 /** 퀴즈가 없으면 null — 퀴즈는 보조 콘텐츠라 아직 안 만든 챕터가 있는 것이 정상이다 */
 export function chapterQuizPromise(chapterId: number): Promise<QuizQuestion[]> | null {
   const load = quizLoadersByBook.get(normalizeName(BOOK))?.get(chapterId);

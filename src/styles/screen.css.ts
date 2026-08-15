@@ -11,6 +11,11 @@ export const nav = style({
   margin: '-8px 0 8px -8px',
 });
 
+/** 내비게이션에서 왼쪽(뒤로가기)과 오른쪽(행동 버튼)을 갈라놓는 빈 칸 */
+export const navSpacer = style({
+  flex: 1,
+});
+
 export const title = style({
   fontSize: 24,
   fontWeight: 700,

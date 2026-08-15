@@ -1,11 +1,11 @@
 import { m } from 'motion/react';
 
 import { BackButton } from '../../components/BackButton';
+import { Button } from '../../components/Button';
 import { ChapterNote } from '../../components/ChapterNote';
-import { QuizWidget } from '../../components/QuizWidget';
 import { ErrorScreen } from '../../components/ScreenStates';
-import { goToFunnel } from '../../routes/route';
-import { chapterNotePath } from '../../services/content';
+import { goToFunnel, goToQuiz } from '../../routes/route';
+import { chapterNotePath, hasChapterQuiz } from '../../services/content';
 import { useEntranceAnimation } from '../../hooks/useEntranceAnimation';
 import { useMemberProgress } from '../../hooks/useMemberProgress';
 import * as screen from '../../styles/screen.css';
@@ -47,14 +47,17 @@ export function NotePage({ member, chapterId }: NotePageProps) {
     <div>
       <nav className={screen.nav}>
         <BackButton onClick={goBack} />
+        <span className={screen.navSpacer} />
+        {/* 노트를 쓴 챕터에 퀴즈 파일이 있을 때만 — 아직 문제를 안 만든 장에는 띄우지 않는다 */}
+        {completedChapters.has(chapter.id) && hasChapterQuiz(chapter.id) && (
+          <Button variant="pill" onClick={() => goToQuiz(member, chapter.id)}>
+            문제 풀러 가기
+          </Button>
+        )}
       </nav>
       <h1 className={screen.title}>{chapter.title}</h1>
       {completedChapters.has(chapter.id) ? (
-        <>
-          <ChapterNote member={member} chapterId={chapter.id} />
-          {/* 퀴즈는 노트를 읽은 뒤 푸는 것이라 노트가 있는 챕터에만 세운다 */}
-          <QuizWidget member={member} chapterId={chapter.id} chapterTitle={chapter.title} />
-        </>
+        <ChapterNote member={member} chapterId={chapter.id} />
       ) : (
         <div className={styles.emptyNote}>
           {/* 둥실 떠 있게 해 빈 화면이 고장난 것처럼 보이지 않게 한다.

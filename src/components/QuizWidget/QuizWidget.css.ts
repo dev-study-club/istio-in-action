@@ -2,32 +2,13 @@ import { globalStyle, keyframes, style, styleVariants } from '@vanilla-extract/c
 
 import { vars } from '../../styles/theme.css';
 
-/* 노트 본문(글)과 성격이 다른 덩어리라 회색 면으로 감싼다 — NotePage emptyNote와 같은 문법 */
+/* 이제 레슨이 화면 하나를 통째로 쓴다 — 카드로 감싸지 않고 페이지 위에 그대로 흐르게 둔다 */
 export const card = style({
-  marginTop: 56,
-  padding: '20px 18px 18px',
-  borderRadius: 18,
-  background: vars.fill.neutral,
-});
-
-/* 듀오링고 레슨 상단처럼 진행 바가 문제를 넘길 때마다 차오른다 */
-export const progressTrack = style({
-  height: 10,
-  borderRadius: 999,
-  background: vars.fill.canvas,
-  overflow: 'hidden',
-});
-
-export const progressFill = style({
-  height: '100%',
-  borderRadius: 999,
-  background: vars.fill.brand,
-  transition: 'width 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+  marginTop: 20,
 });
 
 export const progressLabel = style({
   display: 'block',
-  marginTop: 8,
   color: vars.text['neutral-weak'],
   fontSize: 13,
   fontWeight: 600,
