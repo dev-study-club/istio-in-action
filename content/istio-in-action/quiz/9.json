@@ -1,0 +1,44 @@
+{
+  "questions": [
+    {
+      "question": "PeerAuthentication의 mTLS 모드에 대한 설명으로 옳은 것은?",
+      "choices": [
+        "STRICT는 평문 트래픽만 허용한다",
+        "DISABLE은 mTLS만 허용하는 가장 엄격한 모드다",
+        "PERMISSIVE는 평문과 mTLS를 모두 수락하므로, 아직 사이드카가 없는 워크로드가 섞여 있는 마이그레이션 기간에 쓴다",
+        "PERMISSIVE는 사이드카가 주입된 워크로드끼리만 통신할 수 있게 제한한다"
+      ],
+      "answer": 2,
+      "explanation": "PERMISSIVE는 평문과 mTLS를 함께 받아주는 과도기용 모드라 메시 편입 중에도 기존 통신이 끊기지 않습니다. STRICT는 mTLS만 허용, DISABLE은 상호 인증을 끄는 설정입니다."
+    },
+    {
+      "question": "RequestAuthentication으로 JWT 검증을 설정했을 때 흔히 놓치는 점은?",
+      "choices": [
+        "토큰이 아예 없는 요청은 거부되지 않고 통과하므로, 막으려면 AuthorizationPolicy로 requestPrincipals를 요구해야 한다",
+        "토큰이 없는 요청이 자동으로 거부되어 헬스 체크 경로까지 함께 막힌다",
+        "RequestAuthentication을 적용하면 워크로드 간 mTLS도 함께 강제된다",
+        "RequestAuthentication은 서명만 볼 뿐 발급자(issuer)는 검증하지 않는다"
+      ],
+      "answer": 0,
+      "explanation": "RequestAuthentication은 \"토큰이 있다면 유효해야 한다\"는 규칙이라 잘못된 토큰만 거부하고 토큰 없는 요청은 그대로 통과시킵니다. 인증을 실제로 강제하려면 AuthorizationPolicy에서 requestPrincipals를 요구하는 규칙을 함께 걸어야 합니다."
+    },
+    {
+      "question": "이스티오가 워크로드에 발급하는 SPIFFE ID는 무엇을 근거로 만들어지는가?",
+      "choices": [
+        "파드에 할당된 IP 주소",
+        "컨테이너 이미지의 다이제스트 해시",
+        "노드 이름과 파드 UID의 조합",
+        "워크로드가 속한 네임스페이스와 쿠버네티스 서비스 어카운트"
+      ],
+      "answer": 3,
+      "explanation": "SPIFFE ID는 spiffe://<트러스트 도메인>/ns/<네임스페이스>/sa/<서비스 어카운트> 형태로, 재스케줄되면 바뀌는 IP가 아니라 안정적인 쿠버네티스 신원에 묶입니다. 그래서 인가 정책도 IP가 아닌 이 신원을 기준으로 쓸 수 있습니다."
+    },
+    {
+      "type": "blank",
+      "sentence": "이스티오가 채택한 워크로드 신원 표준은 ___이고, 그 신원을 담아 워크로드에 발급되는 인증서를 ___라 한다.",
+      "blanks": ["SPIFFE", "SVID"],
+      "bank": ["SPIFFE", "SVID", "JWT", "mTLS", "CSR", "SDS"],
+      "explanation": "SPIFFE는 워크로드 신원을 표현하는 표준이고, SVID는 그 신원을 담은 검증 가능한 문서(이스티오에서는 X.509 인증서)입니다. 사이드카는 이 인증서로 상대 워크로드가 누구인지 확인합니다."
+    }
+  ]
+}
