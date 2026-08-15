@@ -112,6 +112,53 @@ export const choice = styleVariants({
   dimmed: [choiceBase, style({ opacity: 0.45 })],
 });
 
+/* 빈칸 채우기 — 단어 타일을 문장 아래 늘어놓는다 */
+export const bank = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 8,
+  marginTop: 18,
+});
+
+export const tile = style({
+  padding: '10px 14px',
+  borderRadius: 12,
+  border: `2px solid ${vars.border.neutral}`,
+  borderBottomWidth: 4,
+  background: vars.fill.canvas,
+  color: vars.text.neutral,
+  fontSize: 15,
+  fontWeight: 600,
+  transition: 'transform 120ms ease, opacity 120ms ease',
+  selectors: {
+    '&:active:enabled': { transform: 'translateY(2px)' },
+    /* 이미 문장에 넣은 단어 — 사라지면 자리가 흔들리니 남겨두고 흐리게만 만든다 */
+    '&:disabled': { opacity: 0.3, cursor: 'default' },
+  },
+});
+
+const slotBase = style({
+  minWidth: 76,
+  margin: '0 3px',
+  padding: '1px 8px',
+  borderRadius: 8,
+  borderWidth: 0,
+  borderBottom: `2px solid ${vars.border.neutral}`,
+  background: 'transparent',
+  color: vars.text['neutral-strong'],
+  fontSize: 16,
+  fontWeight: 700,
+  lineHeight: 1.5,
+  transition: 'background-color 120ms ease, border-color 120ms ease',
+  selectors: { '&:disabled': { cursor: 'default' } },
+});
+
+export const slot = styleVariants({
+  open: [slotBase, style({ selectors: { '&:enabled': { background: vars.fill['brand-weak'] } } })],
+  right: [slotBase, style({ borderBottomColor: vars.text.brand, color: vars.text.brand })],
+  wrong: [slotBase, style({ borderBottomColor: vars.text.danger, color: vars.text.danger })],
+});
+
 /* 보기 앞 번호 배지 — 키보드 1~4로 고를 수 있다는 힌트를 겸한다 */
 export const badge = style({
   flexShrink: 0,

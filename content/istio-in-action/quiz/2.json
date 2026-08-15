@@ -27,6 +27,13 @@
       ],
       "answer": 3,
       "explanation": "VirtualService의 헤더 매칭을 이용해 `x-dark-launch: v2` 헤더가 있는 요청만 v2로 유도했고, 나머지 사용자는 그대로 v1 응답을 받았습니다."
+    },
+    {
+      "type": "blank",
+      "sentence": "메시 토폴로지를 그래프로 시각화하는 대시보드는 ___이고, 요청이 여러 서비스를 거친 경로와 지연 시간을 추적하는 분산 트레이싱 도구는 ___다.",
+      "blanks": ["Kiali", "Jaeger"],
+      "bank": ["Kiali", "Jaeger", "Grafana", "Prometheus", "k9s"],
+      "explanation": "샘플 애드온 중 Kiali는 서비스 메시 토폴로지 시각화와 구성 검증을, Jaeger는 분산 트레이싱을 담당합니다. Prometheus는 메트릭 수집, Grafana는 그 메트릭의 대시보드입니다."
     }
   ]
 }

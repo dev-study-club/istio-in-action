@@ -1,12 +1,29 @@
 import { describe, expect, test } from 'vitest';
 
-import { advanceQueue, isAllCorrect, parseQuiz, type QuizQuestion } from '../services/quiz';
+import {
+  advanceQueue,
+  blankCount,
+  isBlankCorrect,
+  parseQuiz,
+  splitSentence,
+} from '../services/quiz';
 
-function question(overrides: Partial<QuizQuestion> = {}): QuizQuestion {
+function question(overrides: Record<string, unknown> = {}) {
   return {
     question: '엔보이의 리스너는 무엇인가?',
     choices: ['포트를 여는 지점', '업스트림 묶음', '라우팅 규칙', '사이드카 주입기'],
     answer: 0,
+    explanation: '리스너는 엔보이가 요청을 받기 위해 여는 포트다.',
+    ...overrides,
+  };
+}
+
+function blank(overrides: Record<string, unknown> = {}) {
+  return {
+    type: 'blank',
+    sentence: '___는 요청을 받으려고 여는 포트다.',
+    blanks: ['리스너'],
+    bank: ['리스너', '클러스터', '라우트', '필터'],
     explanation: '리스너는 엔보이가 요청을 받기 위해 여는 포트다.',
     ...overrides,
   };
@@ -22,13 +39,26 @@ describe('parseQuiz', () => {
 
     // Assert
     expect(parsed).toHaveLength(2);
-    expect(parsed[1].answer).toBe(3);
+    expect(parsed[1]).toMatchObject({ type: 'choice', answer: 3 });
+  });
+
+  /* type이 없던 시절 파일이 그대로 돌아야 한다 — 빈칸 문제를 넣으며 깨뜨리면 안 된다 */
+  test('type이 없으면 객관식으로 읽는다', () => {
+    expect(parseQuiz({ questions: [question()] })[0].type).toBe('choice');
+  });
+
+  test('빈칸 문제도 읽는다', () => {
+    // Act
+    const parsed = parseQuiz({ questions: [question(), blank()] });
+
+    // Assert
+    expect(parsed[1]).toMatchObject({ type: 'blank', blanks: ['리스너'] });
   });
 
   /*
    * 아래는 전부 "조용히 이상한 퀴즈가 배포되는" 경로다.
-   * 예컨대 answer가 범위를 넘으면 화면에는 문제가 멀쩡히 뜨지만 정답이 아무 보기에도 없어
-   * 아무리 풀어도 성공할 수 없다 — 파싱에서 막아야 배포가 아니라 테스트에서 드러난다.
+   * 예컨대 빈칸 수와 정답 수가 어긋나면 화면에는 문제가 멀쩡히 뜨지만 채울 곳이 없거나 남아
+   * 아무리 풀어도 통과할 수 없다 — 파싱에서 막아야 배포가 아니라 테스트에서 드러난다.
    */
   test.each([
     ['최상위가 배열', [question()]],
@@ -41,8 +71,46 @@ describe('parseQuiz', () => {
     ['answer가 정수가 아님', { questions: [question({ answer: 1.5 })] }],
     ['question이 빈 문자열', { questions: [question({ question: '  ' })] }],
     ['explanation 누락', { questions: [{ ...question(), explanation: undefined }] }],
+    ['모르는 type', { questions: [question({ type: 'listening' })] }],
+    ['빈칸보다 정답이 많음', { questions: [blank({ blanks: ['리스너', '클러스터'] })] }],
+    [
+      '정답보다 빈칸이 많음',
+      { questions: [blank({ sentence: '___와 ___는 다르다.', blanks: ['리스너'] })] },
+    ],
+    ['정답 단어가 bank에 없음', { questions: [blank({ blanks: ['엔보이'] })] }],
+    ['bank가 3개', { questions: [blank({ bank: ['리스너', '클러스터', '라우트'] })] }],
+    ['bank에 중복 단어', { questions: [blank({ bank: ['리스너', '리스너', '라우트', '필터'] })] }],
+    ['blanks가 빈 배열', { questions: [blank({ blanks: [] })] }],
   ])('%s이면 던진다', (_label, data) => {
     expect(() => parseQuiz(data)).toThrow();
+  });
+});
+
+describe('splitSentence / blankCount', () => {
+  test('빈칸 기준으로 쪼개면 조각은 늘 빈칸 수 + 1이다', () => {
+    // Act
+    const parts = splitSentence('___와 ___는 다르다.');
+
+    // Assert
+    expect(parts).toEqual(['', '와 ', '는 다르다.']);
+    expect(blankCount('___와 ___는 다르다.')).toBe(2);
+  });
+
+  test('빈칸이 없으면 0이다', () => {
+    expect(blankCount('빈칸이 없는 문장')).toBe(0);
+  });
+});
+
+describe('isBlankCorrect', () => {
+  test('순서까지 같아야 정답이다', () => {
+    expect(isBlankCorrect(['리스너', '클러스터'], ['리스너', '클러스터'])).toBe(true);
+    expect(isBlankCorrect(['클러스터', '리스너'], ['리스너', '클러스터'])).toBe(false);
+  });
+
+  /* 덜 채운 걸 정답으로 흘리면 아무것도 안 하고 통과된다 */
+  test('덜 채웠으면 오답이다', () => {
+    expect(isBlankCorrect(['리스너', null], ['리스너', '클러스터'])).toBe(false);
+    expect(isBlankCorrect(['리스너'], ['리스너', '클러스터'])).toBe(false);
   });
 });
 
@@ -77,27 +145,6 @@ describe('advanceQueue', () => {
 
     // Assert
     expect(queue, `원본이 바뀌었다: ${queue.join(',')}`).toEqual([0, 1, 2]);
-  });
-});
-
-describe('isAllCorrect', () => {
-  const questions = [question({ answer: 0 }), question({ answer: 2 })];
-
-  test('모두 정답이면 true', () => {
-    expect(isAllCorrect(questions, [0, 2])).toBe(true);
-  });
-
-  test('하나라도 오답이면 false', () => {
-    expect(isAllCorrect(questions, [0, 1])).toBe(false);
-  });
-
-  /* 안 푼 문제를 0번 보기로 착각해 "정답"으로 새면 풀지 않고도 Discord 알림이 나간다 */
-  test('안 푼 문제(null)가 있으면 false', () => {
-    expect(isAllCorrect(questions, [null, 2])).toBe(false);
-  });
-
-  test('답 개수가 문제 수와 다르면 false', () => {
-    expect(isAllCorrect(questions, [0])).toBe(false);
   });
 });
 

@@ -1,8 +1,13 @@
 import { ErrorBoundary, Suspense } from '@suspensive/react';
-import { lazy, use, useEffect, useState } from 'react';
+import { Fragment, lazy, use, useEffect, useState } from 'react';
 
 import { chapterQuizPromise } from '../../services/content';
-import { advanceQueue, type QuizQuestion } from '../../services/quiz';
+import {
+  advanceQueue,
+  isBlankCorrect,
+  splitSentence,
+  type QuizQuestion,
+} from '../../services/quiz';
 import {
   markNotified,
   notifyQuizSuccess,
@@ -120,6 +125,23 @@ export function QuizWidget({ member, chapterId, chapterTitle, onStatus }: QuizWi
 
 type ChoiceVariant = keyof typeof styles.choice;
 
+/** 아직 답을 못 낸 상태에서 무엇을 해야 하는지 — 유형마다 다르다 */
+function emptyPrompt(question: QuizQuestion): string {
+  return question.type === 'choice' ? '답을 골라주세요' : '빈칸을 채워주세요';
+}
+
+/** 오답일 때 정답을 알려주는 문구 — 유형마다 가리키는 것이 다르다 */
+function rightAnswerLabel(question: QuizQuestion): string {
+  return question.type === 'choice'
+    ? `정답은 ${question.answer + 1}번`
+    : `정답은 ${question.blanks.join(', ')}`;
+}
+
+function slotVariant(checked: boolean, right: boolean): keyof typeof styles.slot {
+  if (!checked) return 'open';
+  return right ? 'right' : 'wrong';
+}
+
 function choiceVariant(checked: boolean, isSelected: boolean, isAnswer: boolean): ChoiceVariant {
   if (!checked) return isSelected ? 'selected' : 'idle';
   if (isAnswer) return 'correct';
@@ -142,6 +164,51 @@ const RESULT_TITLE: Record<Outcome, string> = {
   failed: '목숨을 다 썼어요',
 };
 
+/**
+ * 빈칸이 뚫린 문장. 조각과 빈칸을 번갈아 이어 그린다 (조각 수 = 빈칸 수 + 1).
+ * 채운 칸은 눌러서 도로 빼낼 수 있다 — 되돌릴 방법이 없으면 잘못 넣고 갇힌다.
+ */
+function BlankSentence({
+  sentence,
+  filled,
+  blanks,
+  checked,
+  onTake,
+}: {
+  sentence: string;
+  filled: readonly (string | null)[];
+  blanks: readonly string[];
+  checked: boolean;
+  onTake: (slot: number) => void;
+}) {
+  const parts = splitSentence(sentence);
+  return (
+    <>
+      {parts.map((part, i) => (
+        <Fragment key={i}>
+          {part}
+          {i < parts.length - 1 &&
+            (() => {
+              const word = filled[i] ?? null;
+              const right = checked && word === blanks[i];
+              return (
+                <button
+                  type="button"
+                  className={styles.slot[slotVariant(checked, right)]}
+                  disabled={checked || word === null}
+                  aria-label={word === null ? `${i + 1}번째 빈칸` : `${i + 1}번째 빈칸: ${word}`}
+                  onClick={() => onTake(i)}
+                >
+                  {word ?? ' '}
+                </button>
+              );
+            })()}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 function Lesson({
   promise,
   member,
@@ -156,7 +223,10 @@ function Lesson({
    * 틀리면 그 문제가 맨 뒤로 돌아가 다시 나온다 — 큐가 비어야 레슨이 끝난다.
    */
   const [queue, setQueue] = useState<readonly number[]>(() => questions.map((_, i) => i));
+  /** 객관식에서 고른 보기 */
   const [selected, setSelected] = useState<number | null>(null);
+  /** 빈칸 문제에서 각 칸에 넣은 단어 (앞 칸부터) */
+  const [filled, setFilled] = useState<readonly (string | null)[]>([]);
   const [checked, setChecked] = useState(false);
   const [lives, setLives] = useState(MAX_LIVES);
   const [wrongCount, setWrongCount] = useState(0);
@@ -165,18 +235,33 @@ function Lesson({
 
   const index = queue[0];
   const question = index === undefined ? undefined : questions[index];
-  const isCorrect = checked && selected === question?.answer;
   /** 맞혀서 큐에서 빠진 문제 수 — 진행 바는 이 값으로 찬다 */
   const solvedCount = questions.length - queue.length;
+
+  /** 지금 답을 낼 수 있는 상태인지 — 유형마다 "다 골랐다"의 뜻이 다르다 */
+  const isAnswered = (): boolean => {
+    if (question === undefined) return false;
+    if (question.type === 'choice') return selected !== null;
+    return filled.length === question.blanks.length && filled.every((word) => word !== null);
+  };
+  const answered = isAnswered();
+
+  /** 지금 낸 답이 맞는지 — 채점 전에는 의미가 없다 */
+  const gradeNow = (): boolean => {
+    if (question === undefined) return false;
+    if (question.type === 'choice') return selected === question.answer;
+    return isBlankCorrect(filled, question.blanks);
+  };
+  const isCorrect = checked && gradeNow();
 
   const report = (solved: number, remaining: number) =>
     onStatus?.({ ratio: solved / questions.length, lives: remaining });
 
   const check = () => {
-    if (selected === null || checked) return;
+    if (!answered || checked || question === undefined) return;
     setChecked(true);
 
-    const correct = selected === question?.answer;
+    const correct = gradeNow();
     const remaining = correct ? lives : lives - 1;
     if (!correct) {
       setLives(remaining);
@@ -219,12 +304,14 @@ function Lesson({
     }
     setQueue(rest);
     setSelected(null);
+    setFilled([]);
     setChecked(false);
   };
 
   const restart = () => {
     setQueue(questions.map((_, i) => i));
     setSelected(null);
+    setFilled([]);
     setChecked(false);
     setLives(MAX_LIVES);
     setWrongCount(0);
@@ -233,7 +320,25 @@ function Lesson({
     report(0, MAX_LIVES);
   };
 
-  /* 듀오링고처럼 1~4로 고르고 Enter로 넘어간다 — 마우스를 오가지 않아도 풀린다 */
+  /** 앞에서부터 빈 칸을 찾아 단어를 넣는다. 이미 다 찼으면 아무 일도 없다 */
+  const putWord = (word: string) => {
+    if (checked || question === undefined || question.type !== 'blank') return;
+    setFilled((prev) => {
+      const slots = question.blanks.map((_, i) => prev[i] ?? null);
+      const empty = slots.indexOf(null);
+      if (empty === -1) return slots;
+      slots[empty] = word;
+      return slots;
+    });
+  };
+
+  /** 채운 칸을 눌러 도로 빼낸다 — 잘못 넣고 되돌릴 방법이 없으면 갇힌다 */
+  const takeWord = (slot: number) => {
+    if (checked) return;
+    setFilled((prev) => prev.map((word, i) => (i === slot ? null : word)));
+  };
+
+  /* 듀오링고처럼 숫자 키로 고르고 Enter로 넘어간다 — 마우스를 오가지 않아도 풀린다 */
   useEffect(() => {
     if (outcome !== null) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -245,11 +350,14 @@ function Lesson({
         else check();
         return;
       }
+      if (checked || question === undefined) return;
+      /* 숫자 키가 가리키는 대상이 유형마다 다르다 — 객관식은 보기, 빈칸은 단어 타일이다 */
+      const tiles = question.type === 'choice' ? question.choices : question.bank;
       const picked = Number(event.key);
-      if (!Number.isInteger(picked) || picked < 1 || picked > (question?.choices.length ?? 0)) {
-        return;
-      }
-      if (!checked) setSelected(picked - 1);
+      if (!Number.isInteger(picked) || picked < 1 || picked > tiles.length) return;
+
+      if (question.type === 'choice') setSelected(picked - 1);
+      else putWord(tiles[picked - 1]);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -300,35 +408,64 @@ function Lesson({
         <div className={styles.character}>
           <LottieCharacter key={index} name={characterFor(index)} />
         </div>
-        <p className={styles.bubble}>{question.question}</p>
+        <p className={styles.bubble}>
+          {question.type === 'choice' ? (
+            question.question
+          ) : (
+            <BlankSentence
+              sentence={question.sentence}
+              filled={filled}
+              blanks={question.blanks}
+              checked={checked}
+              onTake={takeWord}
+            />
+          )}
+        </p>
       </div>
 
-      <div className={styles.choiceList} role="group" aria-label="보기">
-        {question.choices.map((label, choiceIndex) => (
-          <button
-            key={label}
-            type="button"
-            className={
-              styles.choice[
-                choiceVariant(checked, selected === choiceIndex, choiceIndex === question.answer)
-              ]
-            }
-            aria-pressed={selected === choiceIndex}
-            disabled={checked}
-            onClick={() => setSelected(choiceIndex)}
-          >
-            <span className={styles.badge} aria-hidden>
-              {choiceIndex + 1}
-            </span>
-            {label}
-          </button>
-        ))}
-      </div>
+      {question.type === 'choice' ? (
+        <div className={styles.choiceList} role="group" aria-label="보기">
+          {question.choices.map((label, choiceIndex) => (
+            <button
+              key={label}
+              type="button"
+              className={
+                styles.choice[
+                  choiceVariant(checked, selected === choiceIndex, choiceIndex === question.answer)
+                ]
+              }
+              aria-pressed={selected === choiceIndex}
+              disabled={checked}
+              onClick={() => setSelected(choiceIndex)}
+            >
+              <span className={styles.badge} aria-hidden>
+                {choiceIndex + 1}
+              </span>
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className={styles.bank} role="group" aria-label="단어 타일">
+          {question.bank.map((word) => (
+            <button
+              key={word}
+              type="button"
+              className={styles.tile}
+              /* 이미 넣은 단어는 문장 쪽에 있으니 타일에서는 흐려 두고 다시 누르지 못하게 한다 */
+              disabled={checked || filled.includes(word)}
+              onClick={() => putWord(word)}
+            >
+              {word}
+            </button>
+          ))}
+        </div>
+      )}
 
       {checked && (
         <div className={isCorrect ? styles.feedback.correct : styles.feedback.wrong} role="status">
           <p className={styles.feedbackTitle}>
-            {isCorrect ? '정답이에요! 멋져요 🎉' : `아쉬워요 — 정답은 ${question.answer + 1}번`}
+            {isCorrect ? '정답이에요! 멋져요 🎉' : `아쉬워요 — ${rightAnswerLabel(question)}`}
           </p>
           <p className={styles.feedbackBody}>💡 {question.explanation}</p>
           {/* 틀린 문제는 사라지지 않는다 — 다시 나온다는 걸 미리 알려야 갑자기 나와도 놀라지 않는다 */}
@@ -342,8 +479,8 @@ function Lesson({
         {checked ? (
           <Button onClick={next}>{outOfLives || isLastLeft ? '결과 보기' : '계속하기'}</Button>
         ) : (
-          <Button disabled={selected === null} onClick={check}>
-            {selected === null ? '답을 골라주세요' : '확인'}
+          <Button disabled={!answered} onClick={check}>
+            {answered ? '확인' : emptyPrompt(question)}
           </Button>
         )}
         <p className={styles.hint}>숫자 키로 고르고 Enter로 넘어갈 수 있어요</p>

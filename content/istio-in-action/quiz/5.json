@@ -32,6 +32,13 @@
       ],
       "answer": 3,
       "explanation": "클러스터 이름은 방향·포트·subset·FQDN 순으로 구성됩니다. `outbound|80||catalog...`처럼 subset이 비어 있으면 DestinationRule의 subset 라우팅이 적용되지 않은 기본 클러스터입니다."
+    },
+    {
+      "type": "blank",
+      "sentence": "세밀한 라우팅의 기본 문법은 ___이 레이블로 subset을 선언해 버전을 분류하고, ___가 어디로 보낼지 라우팅 규칙을 정하는 조합이다.",
+      "blanks": ["DestinationRule", "VirtualService"],
+      "bank": ["DestinationRule", "VirtualService", "Gateway", "ServiceEntry", "Canary"],
+      "explanation": "DestinationRule은 version 레이블을 기준으로 워크로드를 subset으로 나누고, VirtualService는 그 subset 중 어디로 트래픽을 보낼지 정합니다. 이 둘의 조합이 5장 전체의 기본 문법입니다."
     }
   ]
 }

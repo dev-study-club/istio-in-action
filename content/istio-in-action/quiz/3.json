@@ -27,6 +27,13 @@
       ],
       "answer": 3,
       "explanation": "X-Request-Id는 요청 상관관계 추적용 헤더입니다. 1번은 함께 추가되는 X-Envoy-Expected-Rq-Timeout-Ms 헤더에 대한 설명입니다."
+    },
+    {
+      "type": "blank",
+      "sentence": "엔보이 xDS 중 ___는 노출할 리스너 목록을 쿼리하는 API이고, ___는 특정 클러스터가 사용할 엔드포인트를 지정하는 API다.",
+      "blanks": ["LDS", "EDS"],
+      "bank": ["LDS", "EDS", "CDS", "RDS", "SDS", "ADS"],
+      "explanation": "LDS(Listener Discovery Service)는 엔보이가 어떤 리스너를 노출할지, EDS(Endpoint Discovery Service)는 클러스터 설정의 일부로 어떤 엔드포인트를 쓸지 알려줍니다."
     }
   ]
 }

@@ -32,6 +32,13 @@
       ],
       "answer": 0,
       "explanation": "게이트웨이에는 메시의 모든 서비스 설정이 내려가므로 pilot의 PILOT_FILTER_GATEWAY_CLUSTER_CONFIG를 켜서 게이트웨이 관련 설정만 남깁니다. Sidecar 리소스는 게이트웨이에 적용되지 않고, 나머지 둘은 액세스 로그와 게이트웨이 주입에 대한 설정입니다."
+    },
+    {
+      "type": "blank",
+      "sentence": "가상 호스팅에서 리버스 프록시는 HTTP/1.1 요청이면 ___ 헤더를 보고, TLS 커넥션이면 ___를 보고 어느 서비스로 보낼지 정한다.",
+      "blanks": ["Host", "SNI"],
+      "bank": ["Host", "SNI", ":authority", "Referer", "X-Request-Id"],
+      "explanation": "가상 IP 하나에 여러 호스트네임이 묶이므로 분기 기준이 필요합니다. HTTP/1.1은 Host 헤더(HTTP/2는 :authority), TCP/TLS 커넥션은 TLS 확장인 SNI에 의존합니다."
     }
   ]
 }
