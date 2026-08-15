@@ -25,6 +25,15 @@ export const progressFill = style({
   },
 });
 
+/** 남은 목숨 — 듀오링고처럼 진행 바 오른쪽에 붙는다 */
+export const lives = style({
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 3,
+  marginLeft: 10,
+});
+
 export const missing = style({
   marginTop: 24,
   padding: '32px 20px',

@@ -39,27 +39,30 @@ const RIVE_VALUES = {
 const RIVE_MS = 4000;
 
 /*
- * 마무리 연출 — fire.riv의 불사조.
+ * 마무리 연출 — fire.riv의 불꽃이 불사조로 변한다.
  *
- * 이 파일은 연출마다 애니메이션이 따로 들어 있어(PHOENIX/PERFECT/CLASSIC × DARK/LIGHT)
- * 상태 머신 입력으로 고르지 않고 이름으로 곧바로 재생한다. 상태 머신을 거치면
- * streakselect_num의 어떤 숫자가 어떤 연출인지를 추측해야 하는데, 이름은 파일이 직접 알려준다.
+ * 반드시 상태 머신으로 돌린다. 꺼진 불꽃 → 점화 → 불사조라는 순서를 아는 건 상태 머신뿐이라,
+ * PHOENIX_* 클립을 이름으로 직접 틀면 변신이 통째로 빠지고 결과 포즈만 남는다
+ * (실제로 그렇게 만들었다가 "불꽃이 변하지 않는다"는 지적을 받고 되돌렸다).
  *
- * 배경이 앱 바탕색(라이트 흰색·다크 먹색)이라 불꽃도 같은 쪽을 써야 테두리가 뜨지 않는다.
+ * 입력 이름과 값은 브라우저에서 파일을 열어 확인했다. streakselect_num은 불꽃 종류를 고르는데
+ * 3이 불사조다 (0·1·4·5는 꺼진 회색 불꽃, 2는 파란 얼음 불꽃).
+ * 배경이 앱 바탕색(라이트 흰색·다크 먹색)이라 불꽃도 같은 쪽을 써야 어긋나지 않는다.
  */
 const FIRE_ARTBOARD = 'IDLE';
-const FIRE_DARK = 'PHOENIX_DARK';
-const FIRE_LIGHT = 'PHOENIX_LIGHT';
+const FIRE_STATE_MACHINE = 'State Machine';
+const FIRE_TRIGGER = 'play_trig';
+const FIRE_PHOENIX = 3;
+const FIRE_VALUES = {
+  darkmode_bool: window.matchMedia('(prefers-color-scheme: dark)').matches,
+  streakselect_num: FIRE_PHOENIX,
+};
 
-/*
- * PHOENIX_DARK·PHOENIX_LIGHT는 불이 붙는 짧은 도입일 뿐이라, 혼자 재생하면 끝나고
- * 잿빛 실루엣만 남는다. 불사조를 계속 세워두는 건 PHOENIX_LOOP다 — 둘을 겹쳐 재생해
- * 테마에 맞는 색으로 불이 붙고 그대로 타오르게 한다.
+/**
+ * 불사조는 변신을 마치면 계속 타오르기만 한다 — 끝을 알려주지 않아 여기서 걷을 때를 정한다.
+ * 꺼진 불꽃이 서 있다 점화되기까지 2초쯤 걸려, 변신을 다 보여주고 한 박자 더 태운다.
  */
-const FIRE_LOOP = 'PHOENIX_LOOP';
-
-/** 루프는 끝을 알려주지 않는다 — 여기서 걷을 때를 정한다 */
-const FIRE_MS = 3400;
+const FIRE_MS = 4600;
 
 type Phase = 'rive' | 'fire';
 
@@ -153,7 +156,9 @@ function CelebrationScene({ onDone }: { onDone: () => void }) {
               key="fire"
               name="fire"
               artboard={FIRE_ARTBOARD}
-              animation={FIRE_ANIMATIONS}
+              stateMachine={FIRE_STATE_MACHINE}
+              trigger={FIRE_TRIGGER}
+              values={FIRE_VALUES}
             />
           </div>
         </div>
@@ -161,14 +166,3 @@ function CelebrationScene({ onDone }: { onDone: () => void }) {
     </Suspense>
   );
 }
-
-/**
- * 도입은 화면 테마에 맞춰 고르고, 타오르는 루프는 공통이다.
- *
- * 모듈에서 한 번만 만든다 — 렌더마다 새 배열을 넘기면 RiveScene의 useMemo가 매번 다시 돌아
- * 인스턴스를 만들었다 버리길 반복한다 (RiveScene 주석의 그 함정이다).
- */
-const FIRE_ANIMATIONS: readonly string[] = [
-  window.matchMedia('(prefers-color-scheme: dark)').matches ? FIRE_DARK : FIRE_LIGHT,
-  FIRE_LOOP,
-];

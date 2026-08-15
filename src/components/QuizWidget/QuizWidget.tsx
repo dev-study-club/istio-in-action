@@ -1,8 +1,8 @@
 import { ErrorBoundary, Suspense } from '@suspensive/react';
-import { use, useEffect, useState } from 'react';
+import { lazy, use, useEffect, useState } from 'react';
 
 import { chapterQuizPromise } from '../../services/content';
-import { isAllCorrect, type QuizQuestion } from '../../services/quiz';
+import { type QuizQuestion } from '../../services/quiz';
 import {
   markNotified,
   notifyQuizSuccess,
@@ -13,25 +13,72 @@ import { Button } from '../Button';
 import { LottieCharacter } from '../LottieCharacter';
 import * as styles from './QuizWidget.css';
 
+/*
+ * 결과 연출은 Rive라 런타임(gzip 44KB)이 따라온다 — 문제를 푸는 동안에는 필요 없으니
+ * 다 풀고 결과로 넘어갈 때 받는다.
+ */
+const RiveScene = lazy(() =>
+  import('../RiveScene').then(({ RiveScene: Component }) => ({ default: Component })),
+);
+
+/** 목숨 — 이만큼 틀리면 그 자리에서 끝난다 */
+export const MAX_LIVES = 3;
+
+/**
+ * 문제마다 다른 친구가 나오도록 돌려 쓴다.
+ * 진도 화면에서 쓰는 캐릭터 로티를 그대로 재사용한다 (public/lottie/path-character-*.json).
+ */
+const CHARACTERS = [
+  'path-character-1',
+  'path-character-9',
+  'path-character-12',
+  'path-character-4',
+  'path-character-15',
+  'path-character-10',
+  'path-character-17',
+  'path-character-13',
+] as const;
+
+function characterFor(index: number): string {
+  return CHARACTERS[index % CHARACTERS.length];
+}
+
+/*
+ * 결과 연출 — fire.riv의 애니메이션을 이름으로 곧바로 재생한다.
+ * 여기는 변신 같은 순서가 없고 결과 한 장면만 세워두면 되므로 상태 머신이 필요 없다
+ * (순서가 있는 축하 연출은 CelebrationOverlay처럼 상태 머신을 써야 한다).
+ */
+const RESULT_ARTBOARD = 'IDLE';
+const RESULT_SCENE = {
+  /** 만점 통과 */
+  perfect: 'PERFECT_LIGHT',
+  /** 목숨을 깎였지만 끝까지 통과 */
+  survived: 'FROZEN',
+  /** 목숨이 다 닳아 중단 */
+  failed: 'EMBERS-1',
+} as const;
+
+type Outcome = keyof typeof RESULT_SCENE;
+
 interface QuizWidgetProps {
   member: string;
   chapterId: number;
   chapterTitle: string;
   /**
-   * 0~1 진행률 — 화면 위 진행 바를 그리는 쪽에 올려준다.
-   * 렌더 중이 아니라 문제를 넘기는 순간에만 부른다 (진행은 사용자의 행동으로만 바뀐다).
+   * 진행률(0~1)과 남은 목숨 — 화면 위 진행 바·하트를 그리는 쪽에 올려준다.
+   * 렌더 중이 아니라 문제를 넘기는 순간에만 부른다 (둘 다 사용자의 행동으로만 바뀐다).
    */
-  onProgress?: (ratio: number) => void;
+  onStatus?: (status: { ratio: number; lives: number }) => void;
 }
 
 /**
- * 노트 아래 이해도 체크 — 듀오링고 레슨처럼 한 번에 한 문제씩 풀고 즉시 채점한다.
- * 전 문제를 맞히면 Discord로 성공을 알린다.
+ * 노트를 읽고 푸는 이해도 체크 — 듀오링고 레슨처럼 한 문제씩 풀고 즉시 채점한다.
+ * 목숨 3개를 다 잃으면 그 자리에서 끝나고, 끝까지 통과하면 Discord로 성공을 알린다.
  *
  * 퀴즈는 보조 콘텐츠다: 파일이 없으면 아무것도 그리지 않고,
- * 로드 실패도 노트 화면을 막지 않도록 ChapterNote와 같은 경계로 감싼다.
+ * 로드 실패도 화면을 막지 않도록 ChapterNote와 같은 경계로 감싼다.
  */
-export function QuizWidget({ member, chapterId, chapterTitle, onProgress }: QuizWidgetProps) {
+export function QuizWidget({ member, chapterId, chapterTitle, onStatus }: QuizWidgetProps) {
   const promise = chapterQuizPromise(chapterId);
   if (promise === null) return null;
 
@@ -43,7 +90,7 @@ export function QuizWidget({ member, chapterId, chapterTitle, onProgress }: Quiz
           member={member}
           chapterId={chapterId}
           chapterTitle={chapterTitle}
-          onProgress={onProgress}
+          onStatus={onStatus}
         />
       </Suspense>
     </ErrorBoundary>
@@ -59,13 +106,19 @@ function choiceVariant(checked: boolean, isSelected: boolean, isAnswer: boolean)
   return 'dimmed';
 }
 
-/* Discord 알림은 보조 기능 — 결과는 성공 화면 아래 한 줄로만 알린다.
+/* Discord 알림은 보조 기능 — 결과 화면 아래 한 줄로만 알린다.
    'skipped'(웹훅 미설정)는 독자가 할 수 있는 일이 없으므로 아무것도 띄우지 않는다. */
 const NOTIFY_MESSAGE: Record<NotifyResult | 'already', string | null> = {
   sent: 'Discord에 성공 알림을 보냈어요 📣',
-  failed: 'Discord 알림 전송에 실패했어요 — 정답인 건 변하지 않아요',
+  failed: 'Discord 알림 전송에 실패했어요 — 통과한 건 변하지 않아요',
   skipped: null,
   already: '이 챕터는 이미 성공 알림을 보냈어요',
+};
+
+const RESULT_TITLE: Record<Outcome, string> = {
+  perfect: '🎉 만점 통과! 성공하였습니다.',
+  survived: '통과했어요! 아슬아슬했네요',
+  failed: '목숨을 다 썼어요',
 };
 
 function Lesson({
@@ -73,57 +126,64 @@ function Lesson({
   member,
   chapterId,
   chapterTitle,
-  onProgress,
+  onStatus,
 }: QuizWidgetProps & { promise: Promise<QuizQuestion[]> }) {
   const questions = use(promise);
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
-  const [answers, setAnswers] = useState<readonly (number | null)[]>(() =>
-    questions.map(() => null),
-  );
-  const [finished, setFinished] = useState(false);
+  const [lives, setLives] = useState(MAX_LIVES);
+  const [wrongCount, setWrongCount] = useState(0);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [notify, setNotify] = useState<NotifyResult | 'already' | null>(null);
 
   const question = questions[index];
   const isLast = index === questions.length - 1;
   const isCorrect = checked && selected === question?.answer;
-  const solved = isAllCorrect(questions, answers);
-  const correctCount = questions.filter((q, i) => answers[i] === q.answer).length;
 
-  /* 채점 전에는 지금 문제를 "푸는 중"으로 보고 이전까지만 채운다 */
-  const report = (solvedCount: number) => onProgress?.(solvedCount / questions.length);
+  const report = (solved: number, remaining: number) =>
+    onStatus?.({ ratio: solved / questions.length, lives: remaining });
 
   const check = () => {
     if (selected === null || checked) return;
     setChecked(true);
-    setAnswers((prev) => prev.map((answer, i) => (i === index ? selected : answer)));
-    report(index + 1);
+
+    const correct = selected === question?.answer;
+    const remaining = correct ? lives : lives - 1;
+    if (!correct) {
+      setLives(remaining);
+      setWrongCount((prev) => prev + 1);
+    }
+    report(index + 1, remaining);
   };
 
   /*
-   * 알림은 마지막 문제를 넘겨 결과를 볼 때 딱 한 번 나간다.
-   * 이 시점의 answers에는 방금 채점한 답까지 들어 있다(check가 먼저 기록한다).
+   * 결과는 다 푼 뒤가 아니라 목숨이 떨어지는 순간에도 정해진다.
+   * 알림은 통과했을 때만, 그리고 딱 한 번 나간다.
    */
-  const finish = () => {
-    setFinished(true);
-    if (!isAllCorrect(questions, answers)) return;
+  const finish = (result: Outcome) => {
+    setOutcome(result);
+    if (result === 'failed') return;
 
     if (wasNotified(member, chapterId)) {
       setNotify('already');
       return;
     }
-    void notifyQuizSuccess(member, chapterTitle).then((result) => {
-      if (result === 'sent') markNotified(member, chapterId);
-      setNotify(result);
+    void notifyQuizSuccess(member, chapterTitle, result === 'perfect').then((sent) => {
+      if (sent === 'sent') markNotified(member, chapterId);
+      setNotify(sent);
     });
   };
 
   const next = () => {
     if (!checked) return;
+    if (lives === 0) {
+      finish('failed');
+      return;
+    }
     if (isLast) {
-      finish();
+      finish(wrongCount === 0 ? 'perfect' : 'survived');
       return;
     }
     setIndex((prev) => prev + 1);
@@ -135,15 +195,16 @@ function Lesson({
     setIndex(0);
     setSelected(null);
     setChecked(false);
-    setAnswers(questions.map(() => null));
-    setFinished(false);
+    setLives(MAX_LIVES);
+    setWrongCount(0);
+    setOutcome(null);
     setNotify(null);
-    report(0);
+    report(0, MAX_LIVES);
   };
 
   /* 듀오링고처럼 1~4로 고르고 Enter로 넘어간다 — 마우스를 오가지 않아도 풀린다 */
   useEffect(() => {
-    if (finished) return;
+    if (outcome !== null) return;
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
       if (target instanceof HTMLElement && target.isContentEditable) return;
@@ -163,26 +224,32 @@ function Lesson({
     return () => window.removeEventListener('keydown', onKeyDown);
   });
 
-  if (finished) {
+  if (outcome !== null) {
     const notifyMessage = notify === null ? null : NOTIFY_MESSAGE[notify];
+    const solved = questions.length - wrongCount;
     return (
       <section className={styles.card} aria-label="이해도 체크 결과">
         <div className={styles.result}>
-          <div className={styles.resultDuo}>
-            <LottieCharacter name="intro-duo" />
+          <div className={styles.resultScene}>
+            {/* 런타임을 받는 동안은 비워둔다 — 잠깐이라 로딩 표시가 오히려 튄다 */}
+            <Suspense fallback={null}>
+              <RiveScene name="fire" artboard={RESULT_ARTBOARD} animation={RESULT_SCENE[outcome]} />
+            </Suspense>
           </div>
           <p className={styles.resultTitle} role="status">
-            {solved ? '🎉 전부 정답! 성공하였습니다.' : '조금만 더! 해설을 보고 다시 도전해요'}
+            {RESULT_TITLE[outcome]}
           </p>
           <p className={styles.resultScore}>
-            {questions.length}문제 중 {correctCount}문제 정답
+            {outcome === 'failed'
+              ? `${questions.length}문제 중 ${solved}문제까지 맞혔어요`
+              : `${questions.length}문제 중 ${solved}문제 정답`}
           </p>
-          {solved && notifyMessage !== null && (
+          {outcome !== 'failed' && notifyMessage !== null && (
             <p className={styles.notifyStatus}>{notifyMessage}</p>
           )}
         </div>
         <div className={styles.footer}>
-          <Button variant={solved ? 'weak' : 'fill'} onClick={restart}>
+          <Button variant={outcome === 'failed' ? 'fill' : 'weak'} onClick={restart}>
             다시 풀기
           </Button>
         </div>
@@ -192,15 +259,14 @@ function Lesson({
 
   if (question === undefined) return null;
 
+  const outOfLives = checked && lives === 0;
+
   return (
     <section className={styles.card} aria-label="이해도 체크">
-      <strong className={styles.progressLabel}>
-        🧠 이해도 체크 · {index + 1} / {questions.length}
-      </strong>
-
       <div className={styles.prompt}>
-        <div className={styles.duo}>
-          <LottieCharacter name="intro-duo" />
+        {/* 문제마다 다른 친구가 나온다 — 같은 얼굴이 세 번 나오면 화면이 멈춘 것처럼 보인다 */}
+        <div className={styles.character}>
+          <LottieCharacter key={index} name={characterFor(index)} />
         </div>
         <p className={styles.bubble}>{question.question}</p>
       </div>
@@ -238,7 +304,7 @@ function Lesson({
 
       <div className={styles.footer}>
         {checked ? (
-          <Button onClick={next}>{isLast ? '결과 보기' : '계속하기'}</Button>
+          <Button onClick={next}>{outOfLives || isLast ? '결과 보기' : '계속하기'}</Button>
         ) : (
           <Button disabled={selected === null} onClick={check}>
             {selected === null ? '답을 골라주세요' : '확인'}
@@ -248,7 +314,7 @@ function Lesson({
       </div>
 
       <span className={styles.srOnly} aria-live="polite">
-        {questions.length}문제 중 {index + 1}번째 문제
+        {questions.length}문제 중 {index + 1}번째 문제, 남은 목숨 {lives}개
       </span>
     </section>
   );

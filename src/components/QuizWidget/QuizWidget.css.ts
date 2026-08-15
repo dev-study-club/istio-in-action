@@ -7,13 +7,6 @@ export const card = style({
   marginTop: 20,
 });
 
-export const progressLabel = style({
-  display: 'block',
-  color: vars.text['neutral-weak'],
-  fontSize: 13,
-  fontWeight: 600,
-});
-
 /* 듀오와 말풍선을 나란히 — 좁은 화면에서도 캐릭터가 밀리지 않게 크기를 고정한다 */
 export const prompt = style({
   display: 'flex',
@@ -22,7 +15,7 @@ export const prompt = style({
   marginTop: 20,
 });
 
-export const duo = style({
+export const character = style({
   flexShrink: 0,
   width: 84,
   height: 84,
@@ -182,9 +175,10 @@ export const result = style({
   textAlign: 'center',
 });
 
-export const resultDuo = style({
-  width: 108,
-  height: 108,
+/** 결과 연출(Rive)이 서는 자리 — 화면 전체로 두면 확대돼 형체가 흐려진다 */
+export const resultScene = style({
+  width: 'min(60vw, 220px)',
+  aspectRatio: '1 / 1',
 });
 
 export const resultTitle = style({

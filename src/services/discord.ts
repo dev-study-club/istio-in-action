@@ -22,16 +22,18 @@ function webhookUrl(): string | null {
 export async function notifyQuizSuccess(
   member: string,
   chapterTitle: string,
+  perfect: boolean,
 ): Promise<NotifyResult> {
   const url = webhookUrl();
   if (url === null) return 'skipped';
 
+  const how = perfect ? '한 문제도 틀리지 않고' : '목숨을 지켜내며';
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        content: `🎉 **${member}** 님이 **${chapterTitle}** 퀴즈를 모두 맞혔습니다. 성공하였습니다!`,
+        content: `🎉 **${member}** 님이 **${chapterTitle}** 퀴즈를 ${how} 통과했습니다. 성공하였습니다!`,
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });

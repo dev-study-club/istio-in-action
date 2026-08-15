@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
 import { BackButton } from '../../components/BackButton';
-import { QuizWidget } from '../../components/QuizWidget';
+import { Heart } from '../../components/Heart';
+import { MAX_LIVES, QuizWidget } from '../../components/QuizWidget';
 import { ErrorScreen } from '../../components/ScreenStates';
 import { goToFunnel, goToNote } from '../../routes/route';
 import { hasChapterQuiz } from '../../services/content';
@@ -24,7 +25,7 @@ interface QuizPageProps {
 export function QuizPage({ member, chapterId }: QuizPageProps) {
   const { progress, completedChapters } = useMemberProgress(member);
   const chapter = progress.chapters.find(({ id }) => id === chapterId);
-  const [ratio, setRatio] = useState(0);
+  const [status, setStatus] = useState({ ratio: 0, lives: MAX_LIVES });
 
   const goBack = () => {
     if (window.history.length > 1) window.history.back();
@@ -53,11 +54,18 @@ export function QuizPage({ member, chapterId }: QuizPageProps) {
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={Math.round(ratio * 100)}
+          aria-valuenow={Math.round(status.ratio * 100)}
           aria-label="퀴즈 진행률"
         >
-          <div className={styles.progressFill} style={{ width: `${ratio * 100}%` }} />
+          <div className={styles.progressFill} style={{ width: `${status.ratio * 100}%` }} />
         </div>
+        {ready && (
+          <span className={styles.lives} aria-label={`남은 목숨 ${status.lives}개`}>
+            {Array.from({ length: MAX_LIVES }, (_, i) => (
+              <Heart key={i} spent={i >= status.lives} />
+            ))}
+          </span>
+        )}
       </nav>
       <h1 className={screen.title}>{chapter.title}</h1>
       {ready ? (
@@ -65,7 +73,7 @@ export function QuizPage({ member, chapterId }: QuizPageProps) {
           member={member}
           chapterId={chapter.id}
           chapterTitle={chapter.title}
-          onProgress={setRatio}
+          onStatus={setStatus}
         />
       ) : (
         <div className={styles.missing}>

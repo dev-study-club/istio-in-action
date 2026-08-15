@@ -1,1 +1,1 @@
-export { QuizWidget } from './QuizWidget';
+export { MAX_LIVES, QuizWidget } from './QuizWidget';
