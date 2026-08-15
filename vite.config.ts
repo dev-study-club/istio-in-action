@@ -26,6 +26,30 @@ function spaFallbackHtml(): Plugin {
   };
 }
 
+/**
+ * 배포 사이트의 절대 주소(끝 슬래시 포함).
+ *
+ * 링크 미리보기 크롤러(카카오톡·페이스북·X)는 og:image를 자기 서버에서 직접 받아간다 —
+ * 문서 기준 상대 경로가 없으니 '/og.png'로는 아무것도 못 가져온다. 그래서 절대 URL이어야 한다.
+ * 배포 워크플로가 actions/configure-pages에게 받은 실제 주소를 VITE_SITE_URL로 넣어준다
+ * (저장소 이름을 바꾸거나 커스텀 도메인을 붙여도 따라간다).
+ * 로컬에는 미리보기를 볼 크롤러가 없으므로 dev 서버 주소로 충분하다.
+ */
+const SITE_URL = `${(process.env.VITE_SITE_URL ?? 'http://localhost:5173').replace(/\/+$/, '')}/`;
+
+/**
+ * index.html의 {{SITE_URL}} 자리를 위 절대 주소로 바꾼다.
+ *
+ * Vite가 기본 제공하는 %VITE_XXX% 치환을 쓰지 않는 이유: 값이 없으면 그 표기가 문서에
+ * 그대로 남아 og:image가 '%VITE_SITE_URL%og.png'가 된다. 여기서 채우면 항상 URL 모양이 된다.
+ */
+function absoluteSiteUrls(): Plugin {
+  return {
+    name: 'absolute-site-urls',
+    transformIndexHtml: (html) => html.replaceAll('{{SITE_URL}}', SITE_URL),
+  };
+}
+
 /** 헤더만 읽어 이미지 원본 크기를 구한다 — 이 용도로 의존성을 하나 더 들이지 않는다 */
 function readImageSize(buffer: Buffer): [number, number] | null {
   /*
@@ -137,6 +161,7 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] }),
     noteImageSizes(),
+    absoluteSiteUrls(),
     spaFallbackHtml(),
   ],
   test: {

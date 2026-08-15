@@ -14,7 +14,42 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="152x152" />
     <link rel="stylesheet" href="/fonts/tps/main-swap.css" />
     <link rel="stylesheet" href="/fonts/tps/others-swap.css" />
-    <title>Dev Study Club</title>
+    <title>Istio in Action 스터디 · Dev Study Club</title>
+    <meta name="description" content="서비스 메시를 함께 읽고, 매주 노트로 남깁니다." />
+
+    <!--
+      링크 미리보기(카카오톡·페이스북·슬랙·디스코드·X)는 모두 Open Graph를 읽는다.
+      {{SITE_URL}}은 빌드가 배포 절대 주소로 바꾼다(vite.config.ts) — 크롤러는 자기 서버에서
+      이미지를 받아가므로 '/og.png' 같은 상대 경로로는 아무것도 못 가져온다.
+
+      이 앱은 CSR이라 크롤러가 JS를 돌리지 않는다. 그래서 미리보기 문구는 화면이 아니라
+      여기 정적 HTML에 박혀 있어야 한다 — JS로 넣으면 브라우저에서만 보이고 카톡에선 빈다.
+    -->
+    <link rel="canonical" href="{{SITE_URL}}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dev Study Club" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:url" content="{{SITE_URL}}" />
+    <meta property="og:title" content="Istio in Action 스터디" />
+    <meta property="og:description" content="서비스 메시를 함께 읽고, 매주 노트로 남깁니다." />
+    <!--
+      카카오톡은 og:image의 크기를 재보지 않고 og:image:width/height를 그대로 믿는다 —
+      실제 파일과 어긋나면 엉뚱하게 잘린다. og.png를 바꾸면 이 숫자도 반드시 같이 고칠 것.
+      지금 값은 실제 파일과 같은 1254x1254(정사각)이다. 슬랙·디스코드는 이 비율 그대로 띄우고,
+      카카오·페이스북·X는 가로로 넓게 자른다 — 부엉이가 가운데라 얼굴은 남는다.
+    -->
+    <meta property="og:image" content="{{SITE_URL}}og.png" />
+    <meta property="og:image:secure_url" content="{{SITE_URL}}og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1254" />
+    <meta property="og:image:height" content="1254" />
+    <meta property="og:image:alt" content="불길 앞에 앉은 초록 부엉이 — Istio in Action 스터디" />
+
+    <!-- X(트위터)는 OG를 읽되 카드 크기는 자체 태그로만 정한다 — 없으면 작은 정사각으로 뜬다 -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Istio in Action 스터디" />
+    <meta name="twitter:description" content="서비스 메시를 함께 읽고, 매주 노트로 남깁니다." />
+    <meta name="twitter:image" content="{{SITE_URL}}og.png" />
   </head>
   <body>
     <div id="root"></div>
