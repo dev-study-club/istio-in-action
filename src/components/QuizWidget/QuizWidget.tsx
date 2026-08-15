@@ -49,16 +49,37 @@ function characterFor(index: number): string {
  * (순서가 있는 축하 연출은 CelebrationOverlay처럼 상태 머신을 써야 한다).
  */
 const RESULT_ARTBOARD = 'IDLE';
-const RESULT_SCENE = {
+
+type Outcome = 'perfect' | 'survived' | 'failed';
+
+/**
+ * 불이 꺼진 불꽃 — 목숨을 다 썼을 때.
+ *
+ * 이름의 DARK/LIGHT는 화면 모드가 아니라 **불꽃 자체의 색**이다. 흰 배경에는 짙은 쪽을,
+ * 먹 배경에는 옅은 쪽을 써야 보인다 — 반대로 고르면 배경에 묻혀 아무것도 안 보인다.
+ *
+ * 모듈에서 한 번만 정한다. 렌더마다 새 값을 넘기면 RiveScene이 인스턴스를 다시 만든다.
+ */
+const EXTINGUISHED = window.matchMedia('(prefers-color-scheme: dark)').matches
+  ? 'FLAME_LIGHT_START'
+  : 'FLAME_DARK_START';
+
+/*
+ * 결과 연출 — fire.riv의 애니메이션을 이름으로 곧바로 재생한다.
+ * 여기는 변신 같은 순서가 없고 결과 한 장면만 세워두면 되므로 상태 머신이 필요 없다
+ * (순서가 있는 축하 연출은 CelebrationOverlay처럼 상태 머신을 써야 한다).
+ *
+ * EMBERS-*·Empty·FLAME_EMPTY는 혼자 재생되지 않아 기본 애니메이션(날개 편 불새)으로 흘러버린다 —
+ * 실패에 불새가 나와 "왜 불사조가 나오냐"는 지적을 받았다. 꺼진 불꽃은 FLAME_*_START뿐이다.
+ */
+const RESULT_SCENE: Record<Outcome, string> = {
   /** 만점 통과 */
   perfect: 'PERFECT_LIGHT',
   /** 목숨을 깎였지만 끝까지 통과 */
   survived: 'FROZEN',
   /** 목숨이 다 닳아 중단 */
-  failed: 'EMBERS-1',
-} as const;
-
-type Outcome = keyof typeof RESULT_SCENE;
+  failed: EXTINGUISHED,
+};
 
 interface QuizWidgetProps {
   member: string;
