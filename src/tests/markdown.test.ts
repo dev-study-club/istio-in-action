@@ -73,3 +73,34 @@ describe('renderMarkdown', () => {
     expect(html, `html was: ${html}`).toContain('language-yaml');
   });
 });
+
+/**
+ * 저장소의 노트를 실제로 렌더해 강조가 살아 있는지 본다.
+ *
+ * 마크다운은 **강조**가 문장부호로 끝나고 곧바로 한글 조사가 붙으면(`**(RPS)**과`) 강조로 읽지
+ * 않고 별표를 그대로 뱉는다. 화면에는 에러 없이 `**...**`가 노출될 뿐이라 눈으로 보기 전에는
+ * 모른다 — 실제로 8장 노트에서 14곳이 그렇게 새어나갔다. 조사를 강조 안쪽에 넣으면 해결된다.
+ */
+describe('저장소의 노트', () => {
+  const notes = Object.entries(
+    import.meta.glob<string>('/content/*/*/[0-9]*.md', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }),
+  );
+
+  test('노트 파일이 최소 한 개는 있다', () => {
+    expect(notes.length, '글롭이 노트를 하나도 못 찾았다').toBeGreaterThan(0);
+  });
+
+  test.each(notes)('%s의 강조가 별표로 새어나오지 않는다', (path, markdown) => {
+    /* 코드 블록·인라인 코드 안의 별표는 원문 그대로가 정상이라 빼고 본다 */
+    const rendered = renderMarkdown(markdown)
+      .replace(/<pre[\s\S]*?<\/pre>/g, '')
+      .replace(/<code[\s\S]*?<\/code>/g, '');
+    const leaked = rendered.match(/.{0,40}\*\*.{0,40}/)?.[0].replace(/\n/g, ' ');
+
+    expect(leaked, `${path}에서 강조가 안 걸린 곳: ${leaked}`).toBeUndefined();
+  });
+});
