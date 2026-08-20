@@ -34,11 +34,51 @@
       "explanation": "키알리는 메트릭에서 유도한 런타임 호출 그래프를 보여주고, 존재하지 않는 서브셋 참조처럼 이스티오 리소스 사이의 모순을 잡아내는 설정 검증 기능을 갖고 있습니다. 시계열 차트 자체는 그라파나가 더 잘 다루는 영역입니다."
     },
     {
+      "question": "이스티오 대시보드 JSON을 ConfigMap으로 만들어 넣었는데 그라파나에 아무 대시보드도 뜨지 않는다. 가장 먼저 확인할 것은?",
+      "choices": [
+        "ConfigMap에 grafana_dashboard=1 레이블이 붙어 있는지",
+        "프로메테우스가 이스티오 메트릭을 수집하고 있는지",
+        "그라파나 관리자 비밀번호가 prom-operator가 맞는지",
+        "대시보드 JSON이 최신 그라파나 스키마 버전인지"
+      ],
+      "answer": 0,
+      "explanation": "그라파나 사이드카(grafana-sc-dashboard)는 grafana_dashboard=1 레이블이 붙은 ConfigMap만 읽어 마운트합니다. 레이블이 없으면 ConfigMap을 통째로 무시하므로, 파일이 멀쩡해도 대시보드가 하나도 뜨지 않습니다."
+    },
+    {
+      "question": "운영 환경에서 샘플링 비율을 10%로 낮춰 두었는데, 특정 요청 하나만은 반드시 트레이싱하고 싶다. 이때 쓰는 방법은?",
+      "choices": [
+        "그 요청을 보내기 직전 meshConfig의 sampling을 100으로 올린다",
+        "요청에 x-envoy-force-trace 헤더를 실어 보낸다",
+        "요청에 x-b3-sampled: 0 헤더를 실어 보낸다",
+        "해당 워크로드만 커스텀 부트스트랩으로 collectorEndpoint를 바꾼다"
+      ],
+      "answer": 1,
+      "explanation": "x-envoy-force-trace 헤더가 있으면 메시의 샘플링 비율과 무관하게 그 요청과 그 요청이 만드는 호출 그래프 전체가 샘플링됩니다. 평시에는 샘플링을 낮게 두고 진단이 필요할 때만 이 헤더를 주입하는 것이 운영 원칙입니다."
+    },
+    {
+      "question": "키알리에서 같은 네임스페이스를 봤는데 Applications는 2개, Workloads는 3개로 잡힌다. 이유로 옳은 것은?",
+      "choices": [
+        "Workloads는 사이드카가 주입된 파드까지 따로 세기 때문이다",
+        "Applications는 이스티오 설정이 적용된 워크로드만 세기 때문이다",
+        "app 레이블이 없는 워크로드가 하나 있어 Application으로 묶이지 않기 때문이다",
+        "Applications는 Deployment 단위, Workloads는 파드 단위로 세기 때문이다"
+      ],
+      "answer": 2,
+      "explanation": "키알리에서 Application은 app 레이블로 묶인 워크로드들의 논리적 그룹입니다. app 레이블이 없는 파드(예: prom-grafana)는 Workload로만 잡히고 Application 집계에서 빠집니다. app/version 레이블은 트레이싱 식별과 버전별 관측의 전제조건이기도 합니다."
+    },
+    {
       "type": "blank",
       "sentence": "분산 트레이싱에서 요청 하나가 지나간 전체 경로를 ___라 하고, 그 경로를 이루는 개별 작업 단위 하나를 ___이라 한다.",
       "blanks": ["트레이스", "스팬"],
       "bank": ["트레이스", "스팬", "메트릭", "로그", "대시보드"],
       "explanation": "트레이스는 요청 하나의 전체 여정이고, 스팬은 그 안에서 서비스 한 곳이 처리한 구간입니다. 스팬들이 부모-자식 관계로 이어져 하나의 트레이스를 이룹니다."
+    },
+    {
+      "type": "blank",
+      "sentence": "이스티오 메트릭에서 호출한 쪽 사이드카가 보고한 값은 reporter=\"___\", 호출된 쪽 사이드카가 보고한 값은 reporter=\"___\"이며, 둘의 차이가 곧 네트워크 구간에서 생긴 지연·실패다.",
+      "blanks": ["source", "destination"],
+      "bank": ["source", "destination", "upstream", "ingress", "mesh"],
+      "explanation": "같은 호출이 양쪽 사이드카에서 각각 기록되므로 그대로 합하면 2배가 되지만, 나눠 보면 클라이언트가 본 값과 서버가 본 값의 차이 — 즉 네트워크 구간에서 일어난 일 — 이 드러납니다. 대시보드가 Client/Server를 나눠 그리는 이유입니다."
     }
   ]
 }
