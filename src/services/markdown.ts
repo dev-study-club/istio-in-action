@@ -2,6 +2,8 @@ import DOMPurify from 'dompurify';
 import { Marked } from 'marked';
 import noteImageSizes from 'virtual:note-image-sizes';
 
+import { githubAlertExtension } from './markdownAlerts';
+
 const ABSOLUTE_URL_PATTERN = /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i;
 
 function escapeAttribute(value: string): string {
@@ -35,6 +37,9 @@ const marked = new Marked({
     },
   },
 });
+
+// 깃허브 스타일 얼럿(`> [!NOTE]` 등) 지원 — 로직은 markdownAlerts.ts 참조
+marked.use(githubAlertExtension());
 
 /**
  * 챕터 노트 마크다운 → 안전한 HTML 문자열.

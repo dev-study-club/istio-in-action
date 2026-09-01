@@ -171,3 +171,46 @@ globalStyle(`${scope} th`, {
   color: vars.text['neutral-strong'],
   fontWeight: 600,
 });
+
+/*
+ * 깃허브 스타일 얼럿(admonition). `> [!NOTE]` 처럼 쓰면 markdown.ts 확장이
+ * <div class="markdown-alert markdown-alert-note"> 로 바꿔준다. 유형별로 색만 다르고 구조는 같다.
+ */
+const ALERT_COLORS: Record<string, string> = {
+  note: '#4493f8',
+  tip: '#3fb950',
+  important: '#ab7df8',
+  warning: '#d29922',
+  caution: '#f85149',
+};
+
+globalStyle(`${scope} .markdown-alert`, {
+  margin: '20px 0',
+  padding: '10px 16px',
+  borderLeft: '3px solid',
+  borderRadius: 6,
+});
+
+globalStyle(`${scope} .markdown-alert > :first-child`, { marginTop: 0 });
+globalStyle(`${scope} .markdown-alert > :last-child`, { marginBottom: 0 });
+
+globalStyle(`${scope} .markdown-alert-title`, {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  margin: '0 0 8px',
+  fontWeight: 600,
+  lineHeight: 1.4,
+});
+
+globalStyle(`${scope} .markdown-alert-icon`, { flex: 'none' });
+
+for (const [type, color] of Object.entries(ALERT_COLORS)) {
+  globalStyle(`${scope} .markdown-alert-${type}`, {
+    borderLeftColor: color,
+    background: `color-mix(in srgb, ${color} 8%, transparent)`,
+  });
+  globalStyle(`${scope} .markdown-alert-${type} .markdown-alert-title`, {
+    color,
+  });
+}
